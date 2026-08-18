@@ -23,7 +23,7 @@
     async init() {
       try {
         // 1. Inicializar tema salvo (Modo Escuro / Claro)
-        this.initTheme();
+        window.app.initTheme();
 
         // 2. Inicializar o banco de dados IndexedDB (com fallback para LocalStorage)
         await window.db.init();
@@ -34,10 +34,10 @@
         await window.products.init();
 
         // 4. Registrar eventos comuns de cabeçalho e configurações
-        this.registerGlobalEvents();
+        window.app.registerGlobalEvents();
 
         // 5. Carregar aba inicial
-        await this.switchTab('dashboard');
+        await window.app.switchTab('dashboard');
 
         // 6. Ocultar o carregador inicial e habilitar navegação
         const loader = document.getElementById('tab-loading');
@@ -103,7 +103,7 @@
       }
       
       safeCreateIcons();
-      this.showToast(isDark ? 'Modo Escuro ativado!' : 'Modo Claro ativado!', 'info');
+      window.app.showToast(isDark ? 'Modo Escuro ativado!' : 'Modo Claro ativado!', 'info');
     },
 
     /**
@@ -159,7 +159,7 @@
         btn.addEventListener('click', (e) => {
           const tab = btn.getAttribute('data-tab');
           if (tab && tab !== activeTab) {
-            this.switchTab(tab);
+            window.app.switchTab(tab);
           }
         });
       });
@@ -168,7 +168,7 @@
       const btnTheme = document.getElementById('btn-theme-toggle');
       if (btnTheme) {
         btnTheme.addEventListener('click', () => {
-          this.toggleTheme();
+          window.app.toggleTheme();
         });
       }
 
@@ -212,18 +212,18 @@
               taxDefault
             });
             
-            this.showToast('Configurações salvas!', 'success');
+            window.app.showToast('Configurações salvas!', 'success');
             modalSettings.classList.add('hidden');
 
             // Recalcular custos dependentes das configurações
             await window.ingredients.recalculateAllBasesAndProducts();
             
             // Recarregar a aba atual
-            this.switchTab(activeTab);
+            window.app.switchTab(activeTab);
 
           } catch (err) {
             console.error(err);
-            this.showToast('Erro ao salvar configurações.', 'error');
+            window.app.showToast('Erro ao salvar configurações.', 'error');
           }
         });
       }

@@ -65,7 +65,7 @@
           if (!window.indexedDB) {
             console.warn('IndexedDB não é suportado pelo navegador. Usando fallback LocalStorage.');
             useLocalStorageFallback = true;
-            this.initDefaultSettings().then(() => resolve(null));
+            window.db.initDefaultSettings().then(() => resolve(null));
             return;
           }
 
@@ -101,7 +101,7 @@
         } catch (err) {
           console.warn('Exceção ao abrir IndexedDB. Usando fallback LocalStorage:', err);
           useLocalStorageFallback = true;
-          this.initDefaultSettings().then(() => resolve(null));
+          window.db.initDefaultSettings().then(() => resolve(null));
         }
       });
     },
