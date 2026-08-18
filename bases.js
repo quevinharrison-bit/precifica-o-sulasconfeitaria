@@ -10,6 +10,30 @@
   // Variável para acumular itens na criação/edição da base corrente
   let currentBaseIngredients = [];
 
+  // Função auxiliar inteligente para estimar o peso/volume de 1 xícara
+  const getIngredientCupWeight = (ing) => {
+    if (ing.cupWeight > 0) return ing.cupWeight;
+    const unit = ing.unit;
+    const name = (ing.name || '').toLowerCase();
+    
+    if (unit === 'L' || unit === 'ml') {
+      return 240; // 1 xícara de líquidos = 240ml
+    }
+    if (name.includes('farinha') || name.includes('trigo')) {
+      return 120; // 1 xícara de farinha = 120g
+    }
+    if (name.includes('açúcar') || name.includes('acucar') || name.includes('adoçante')) {
+      return 200; // 1 xícara de açúcar = 200g
+    }
+    if (name.includes('cacau') || name.includes('chocolate')) {
+      return 90; // 1 xícara de cacau = 90g
+    }
+    if (name.includes('manteiga') || name.includes('margarina')) {
+      return 200; // 1 xícara de manteiga = 200g
+    }
+    return 150; // Média padrão para secos
+  };
+
   window.bases = {
     /**
      * Inicializa o módulo de bases
@@ -248,7 +272,7 @@
             if (ing.unit === 'kg') usageUnit = 'g';
             if (ing.unit === 'L') usageUnit = 'ml';
             
-            if (ing.cupWeight > 0) {
+            if (usageUnit === 'g' || usageUnit === 'ml') {
               unitBadge.innerHTML = `
                 <select id="base-add-ingredient-use-unit" class="bg-transparent font-bold text-sweet-600 focus:outline-none text-[10px] cursor-pointer">
                   <option value="${usageUnit}">${usageUnit}</option>
@@ -286,7 +310,8 @@
             const useUnitSelect = document.getElementById('base-add-ingredient-use-unit');
             const useUnit = useUnitSelect ? useUnitSelect.value : (ing.unit === 'kg' ? 'g' : ing.unit === 'L' ? 'ml' : ing.unit);
             
-            const qtyConverted = useUnit === 'xicara' ? qty * ing.cupWeight : qty;
+            const cupWeight = getIngredientCupWeight(ing);
+            const qtyConverted = useUnit === 'xicara' ? qty * cupWeight : qty;
 
             // Verificar se já existe com a mesma unidade, se sim soma
             const existing = currentBaseIngredients.find(item => item.ingredientId === ingId && item.originalUnit === useUnit);

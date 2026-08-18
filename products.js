@@ -11,6 +11,30 @@
   let searchFilter = '';
   let currentProductItems = []; // Itens inseridos no produto em edição
 
+  // Função auxiliar inteligente para estimar o peso/volume de 1 xícara
+  const getIngredientCupWeight = (ing) => {
+    if (ing.cupWeight > 0) return ing.cupWeight;
+    const unit = ing.unit;
+    const name = (ing.name || '').toLowerCase();
+    
+    if (unit === 'L' || unit === 'ml') {
+      return 240; // 1 xícara de líquidos = 240ml
+    }
+    if (name.includes('farinha') || name.includes('trigo')) {
+      return 120; // 1 xícara de farinha = 120g
+    }
+    if (name.includes('açúcar') || name.includes('acucar') || name.includes('adoçante')) {
+      return 200; // 1 xícara de açúcar = 200g
+    }
+    if (name.includes('cacau') || name.includes('chocolate')) {
+      return 90; // 1 xícara de cacau = 90g
+    }
+    if (name.includes('manteiga') || name.includes('margarina')) {
+      return 200; // 1 xícara de manteiga = 200g
+    }
+    return 150; // Média padrão para secos
+  };
+
   window.products = {
     /**
      * Inicializa o módulo de produtos
@@ -381,7 +405,7 @@
           const ing = ingredientsList.find(i => i.id === selectedId);
           if (ing) {
             let usageUnit = ing.unit === 'kg' ? 'g' : ing.unit === 'L' ? 'ml' : ing.unit;
-            if (ing.cupWeight > 0) {
+            if (usageUnit === 'g' || usageUnit === 'ml') {
               unitBadge.innerHTML = `
                 <select id="product-add-ingredient-use-unit" class="bg-transparent font-bold text-sweet-600 focus:outline-none text-[10px] cursor-pointer">
                   <option value="${usageUnit}">${usageUnit}</option>
@@ -472,7 +496,12 @@
 
           const useUnitSelect = document.getElementById('product-add-ingredient-use-unit');
           const useUnit = useUnitSelect ? useUnitSelect.value : unit;
-          const qtyConverted = useUnit === 'xicara' ? qty * cupWeight : qty;
+          
+          let useCupWeight = cupWeight;
+          if (useUnit === 'xicara') {
+            useCupWeight = getIngredientCupWeight(ing);
+          }
+          const qtyConverted = useUnit === 'xicara' ? qty * useCupWeight : qty;
 
           const existing = currentProductItems.find(item => item.itemId === itemId && item.type === type && item.originalUnit === useUnit);
           if (existing) {
