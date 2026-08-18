@@ -94,6 +94,7 @@
                     <option value="Açúcares/Adoçantes">Açúcares/Adoçantes</option>
                     <option value="Chocolates/Cacau">Chocolates</option>
                     <option value="Frutas/Frescos">Frutas/Frescos</option>
+                    <option value="Ovos/Fermentos">Ovos/Fermentos</option>
                     <option value="Embalagens">Embalagens</option>
                     <option value="Outros">Outros/Decorativos</option>
                   </select>
@@ -106,7 +107,7 @@
                     <option value="kg">Quilograma (kg)</option>
                     <option value="ml">Mililitro (ml)</option>
                     <option value="L">Litro (L)</option>
-                    <option value="un">Unidade (un)</option>
+                    <option value="un">Unidade / Quantidade (un)</option>
                   </select>
                 </div>
               </div>
@@ -122,6 +123,16 @@
                   <input type="number" id="ingredient-price" step="0.01" min="0" required placeholder="Ex: 6.50"
                     class="w-full px-3 py-2 border border-sweet-200 rounded-xl focus:outline-none focus:border-sweet-500 text-sm font-medium">
                 </div>
+              </div>
+
+              <!-- Conversão para Xícara (Opcional) -->
+              <div id="div-cup-weight">
+                <label class="block text-xs font-semibold text-sweet-800 mb-1" for="ingredient-cupWeight">
+                  Peso de 1 Xícara (opcional, em g ou ml)
+                </label>
+                <input type="number" id="ingredient-cupWeight" step="0.1" min="0" placeholder="Ex: 200 para açúcar, 120 para farinha"
+                  class="w-full px-3 py-2 border border-sweet-200 rounded-xl focus:outline-none focus:border-sweet-500 text-sm font-medium">
+                <p class="text-[9px] text-sweet-600 mt-0.5">Permite adicionar este ingrediente em "xícaras" nas receitas.</p>
               </div>
 
               <div class="p-3 bg-sweet-100 rounded-xl border border-sweet-200/50 flex justify-between items-center text-xs">
@@ -181,6 +192,7 @@
       else if (item.category === 'Chocolates/Cacau') categoryBadgeColor = 'bg-amber-100 text-amber-800';
       else if (item.category === 'Frutas/Frescos') categoryBadgeColor = 'bg-emerald-50 text-emerald-700';
       else if (item.category === 'Embalagens') categoryBadgeColor = 'bg-purple-50 text-purple-700';
+      else if (item.category === 'Ovos/Fermentos') categoryBadgeColor = 'bg-orange-50 text-orange-700';
 
       return `
         <div class="bg-white p-3.5 rounded-2xl border border-sweet-200/50 shadow-sm flex items-center justify-between hover:shadow-md transition-shadow cursor-pointer active:scale-[0.99]"
@@ -234,10 +246,16 @@
 
       const selectUnit = document.getElementById('ingredient-unit');
       const labelPackageSize = document.getElementById('label-packageSize');
-      if (selectUnit && labelPackageSize) {
+      const divCupWeight = document.getElementById('div-cup-weight');
+      if (selectUnit && labelPackageSize && divCupWeight) {
         const updateLabel = () => {
           const val = selectUnit.value;
           labelPackageSize.textContent = `Qtd. Embalagem (${val})`;
+          if (val === 'un') {
+            divCupWeight.classList.add('hidden');
+          } else {
+            divCupWeight.classList.remove('hidden');
+          }
         };
         selectUnit.addEventListener('change', updateLabel);
         updateLabel();
@@ -325,6 +343,13 @@
           document.getElementById('ingredient-packageSize').value = item.packageSize;
           document.getElementById('ingredient-price').value = item.price;
           
+          document.getElementById('ingredient-cupWeight').value = item.cupWeight || '';
+          if (item.unit === 'un') {
+            document.getElementById('div-cup-weight').classList.add('hidden');
+          } else {
+            document.getElementById('div-cup-weight').classList.remove('hidden');
+          }
+          
           // Atualizar label da embalagem
           document.getElementById('label-packageSize').textContent = `Qtd. Embalagem (${item.unit})`;
           
@@ -341,6 +366,8 @@
       } else {
         title.innerHTML = `<i data-lucide="droplet" class="w-5 h-5 text-sweet-500"></i> Cadastrar Insumo`;
         document.getElementById('label-packageSize').textContent = `Qtd. Embalagem (g)`;
+        document.getElementById('ingredient-cupWeight').value = '';
+        document.getElementById('div-cup-weight').classList.remove('hidden');
         btnDelete.classList.add('hidden');
       }
 
@@ -384,6 +411,9 @@
       }
       const pricePerUnit = price / divisor;
 
+      const cupWeightInput = document.getElementById('ingredient-cupWeight');
+      const cupWeight = cupWeightInput && unit !== 'un' ? parseFloat(cupWeightInput.value) || null : null;
+
       const data = {
         id,
         name,
@@ -392,6 +422,7 @@
         packageSize,
         price,
         pricePerUnit,
+        cupWeight,
         updatedAt: new Date().toISOString()
       };
 

@@ -380,7 +380,17 @@
         } else {
           const ing = ingredientsList.find(i => i.id === selectedId);
           if (ing) {
-            unitBadge.textContent = ing.unit === 'kg' ? 'g' : ing.unit === 'L' ? 'ml' : ing.unit;
+            let usageUnit = ing.unit === 'kg' ? 'g' : ing.unit === 'L' ? 'ml' : ing.unit;
+            if (ing.cupWeight > 0) {
+              unitBadge.innerHTML = `
+                <select id="product-add-ingredient-use-unit" class="bg-transparent font-bold text-sweet-600 focus:outline-none text-[10px] cursor-pointer">
+                  <option value="${usageUnit}">${usageUnit}</option>
+                  <option value="xicara">xícara</option>
+                </select>
+              `;
+            } else {
+              unitBadge.textContent = usageUnit;
+            }
           } else {
             unitBadge.textContent = '';
           }
@@ -438,10 +448,10 @@
             return;
           }
 
-          // Buscar detalhes do item
           let name = '';
           let costPerUnit = 0;
           let unit = '';
+          let cupWeight = 0;
 
           if (type === 'base') {
             const base = basesList.find(b => b.id === itemId);
@@ -456,12 +466,18 @@
               name = ing.name;
               costPerUnit = ing.pricePerUnit;
               unit = ing.unit === 'kg' ? 'g' : ing.unit === 'L' ? 'ml' : ing.unit;
+              cupWeight = ing.cupWeight || 0;
             }
           }
 
-          const existing = currentProductItems.find(item => item.itemId === itemId && item.type === type);
+          const useUnitSelect = document.getElementById('product-add-ingredient-use-unit');
+          const useUnit = useUnitSelect ? useUnitSelect.value : unit;
+          const qtyConverted = useUnit === 'xicara' ? qty * cupWeight : qty;
+
+          const existing = currentProductItems.find(item => item.itemId === itemId && item.type === type && item.originalUnit === useUnit);
           if (existing) {
-            existing.quantity += qty;
+            existing.quantity += qtyConverted;
+            existing.originalQty += qty;
           } else {
             currentProductItems.push({
               type,
@@ -469,7 +485,9 @@
               name,
               costPerUnit,
               unit,
-              quantity: qty
+              quantity: qtyConverted,
+              originalQty: qty,
+              originalUnit: useUnit
             });
           }
 
@@ -599,6 +617,7 @@
             let name = 'Excluído';
             let costPerUnit = 0;
             let unit = '';
+            let cupWeight = 0;
             
             if (pItem.type === 'base') {
               const base = basesMap.get(pItem.itemId);
@@ -613,6 +632,7 @@
                 name = ing.name;
                 costPerUnit = ing.pricePerUnit;
                 unit = ing.unit === 'kg' ? 'g' : ing.unit === 'L' ? 'ml' : ing.unit;
+                cupWeight = ing.cupWeight || 0;
               }
             }
 
@@ -622,7 +642,9 @@
               name,
               costPerUnit,
               unit,
-              quantity: pItem.quantity
+              quantity: pItem.quantity,
+              originalQty: pItem.originalQty || pItem.quantity,
+              originalUnit: pItem.originalUnit || unit
             };
           });
 
@@ -681,11 +703,13 @@
         else if (item.type === 'package') typeBadge = '<span class="px-1.5 py-0.5 rounded text-[8px] font-bold bg-purple-50 text-purple-600 mr-1.5">Emb</span>';
         else typeBadge = '<span class="px-1.5 py-0.5 rounded text-[8px] font-bold bg-blue-50 text-blue-600 mr-1.5">Insumo</span>';
 
+        const qtyDisplay = item.originalUnit === 'xicara' ? `${item.originalQty} xícara(s) (~${item.quantity.toFixed(0)}${item.unit})` : `${item.quantity}${item.unit}`;
+
         return `
           <div class="flex items-center justify-between bg-white px-2.5 py-1.5 rounded-lg border border-sweet-200/50 text-[11px] font-medium">
             <div class="flex-1 min-w-0 pr-2">
               <span class="block text-sweet-900 truncate font-semibold">${typeBadge}${item.name}</span>
-              <span class="text-sweet-600">${item.quantity}${item.unit} &times; ${window.app.formatCurrency(item.costPerUnit)}</span>
+              <span class="text-sweet-600">${qtyDisplay} &times; ${window.app.formatCurrency(item.costPerUnit)}</span>
             </div>
             <div class="flex items-center gap-2">
               <span class="font-bold text-sweet-900">${window.app.formatCurrency(cost)}</span>
@@ -844,7 +868,9 @@
         items: currentProductItems.map(item => ({
           type: item.type,
           itemId: item.itemId,
-          quantity: item.quantity
+          quantity: item.quantity,
+          originalQty: item.originalQty,
+          originalUnit: item.originalUnit
         })),
         indirectCostPercent,
         laborTimeMinutes,
@@ -955,7 +981,7 @@
                 ${itemsList.map(item => `
                   <tr class="border-b border-sweet-100">
                     <td class="py-2 font-medium">${item.name}</td>
-                    <td class="py-2 text-center">${item.quantity}${item.unit}</td>
+                    <td class="py-2 text-center">${item.originalUnit === 'xicara' ? `${item.originalQty} xic. (~${item.quantity.toFixed(0)}${item.unit})` : `${item.quantity}${item.unit}`}</td>
                     <td class="py-2 text-right">${window.app.formatCurrency(item.costPerUnit)}</td>
                     <td class="py-2 text-right font-bold">${window.app.formatCurrency(item.quantity * item.costPerUnit)}</td>
                   </tr>

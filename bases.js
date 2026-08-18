@@ -244,11 +244,20 @@
           const ingId = addIngSelect.value;
           const ing = ingredientsList.find(i => i.id === ingId);
           if (ing) {
-            // Exibir a unidade de uso
             let usageUnit = ing.unit;
             if (ing.unit === 'kg') usageUnit = 'g';
             if (ing.unit === 'L') usageUnit = 'ml';
-            unitBadge.textContent = usageUnit;
+            
+            if (ing.cupWeight > 0) {
+              unitBadge.innerHTML = `
+                <select id="base-add-ingredient-use-unit" class="bg-transparent font-bold text-sweet-600 focus:outline-none text-[10px] cursor-pointer">
+                  <option value="${usageUnit}">${usageUnit}</option>
+                  <option value="xicara">xícara</option>
+                </select>
+              `;
+            } else {
+              unitBadge.textContent = usageUnit;
+            }
           } else {
             unitBadge.textContent = '';
           }
@@ -274,17 +283,25 @@
 
           const ing = ingredientsList.find(i => i.id === ingId);
           if (ing) {
-            // Verificar se já existe, se sim soma
-            const existing = currentBaseIngredients.find(item => item.ingredientId === ingId);
+            const useUnitSelect = document.getElementById('base-add-ingredient-use-unit');
+            const useUnit = useUnitSelect ? useUnitSelect.value : (ing.unit === 'kg' ? 'g' : ing.unit === 'L' ? 'ml' : ing.unit);
+            
+            const qtyConverted = useUnit === 'xicara' ? qty * ing.cupWeight : qty;
+
+            // Verificar se já existe com a mesma unidade, se sim soma
+            const existing = currentBaseIngredients.find(item => item.ingredientId === ingId && item.originalUnit === useUnit);
             if (existing) {
-              existing.quantity += qty;
+              existing.quantity += qtyConverted;
+              existing.originalQty += qty;
             } else {
               currentBaseIngredients.push({
                 ingredientId: ingId,
                 name: ing.name,
                 unit: ing.unit === 'kg' ? 'g' : ing.unit === 'L' ? 'ml' : ing.unit,
                 pricePerUnit: ing.pricePerUnit,
-                quantity: qty
+                quantity: qtyConverted,
+                originalQty: qty,
+                originalUnit: useUnit
               });
             }
 
@@ -380,12 +397,15 @@
           
           currentBaseIngredients = item.ingredients.map(bi => {
             const ing = ingredientsMap.get(bi.ingredientId);
+            const baseUnit = ing ? (ing.unit === 'kg' ? 'g' : ing.unit === 'L' ? 'ml' : ing.unit) : '?';
             return {
               ingredientId: bi.ingredientId,
               name: ing ? ing.name : 'Insumo Excluído',
-              unit: ing ? (ing.unit === 'kg' ? 'g' : ing.unit === 'L' ? 'ml' : ing.unit) : '?',
+              unit: baseUnit,
               pricePerUnit: ing ? ing.pricePerUnit : 0,
-              quantity: bi.quantity
+              quantity: bi.quantity,
+              originalQty: bi.originalQty || bi.quantity,
+              originalUnit: bi.originalUnit || baseUnit
             };
           });
 
@@ -423,11 +443,12 @@
 
       listContainer.innerHTML = currentBaseIngredients.map(item => {
         const cost = item.quantity * item.pricePerUnit;
+        const qtyDisplay = item.originalUnit === 'xicara' ? `${item.originalQty} xícara(s) (~${item.quantity.toFixed(0)}${item.unit})` : `${item.quantity}${item.unit}`;
         return `
           <div class="flex items-center justify-between bg-white px-2.5 py-1.5 rounded-lg border border-sweet-200/50 text-[11px] font-medium">
             <div class="flex-1 min-w-0 pr-2">
               <span class="block text-sweet-900 truncate font-semibold">${item.name}</span>
-              <span class="text-sweet-600">${item.quantity}${item.unit} &times; ${window.app.formatCurrency(item.pricePerUnit)}</span>
+              <span class="text-sweet-600">${qtyDisplay} &times; ${window.app.formatCurrency(item.pricePerUnit)}</span>
             </div>
             <div class="flex items-center gap-2">
               <span class="font-bold text-sweet-900">${window.app.formatCurrency(cost)}</span>
@@ -496,7 +517,9 @@
         totalCost += item.quantity * item.pricePerUnit;
         return {
           ingredientId: item.ingredientId,
-          quantity: item.quantity
+          quantity: item.quantity,
+          originalQty: item.originalQty,
+          originalUnit: item.originalUnit
         };
       });
 

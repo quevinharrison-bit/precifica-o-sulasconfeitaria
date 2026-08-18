@@ -131,7 +131,8 @@
           { id: 'ing-4', name: 'Manteiga sem Sal', category: 'Laticínios', unit: 'g', packageSize: 200, price: 9.50, pricePerUnit: 9.50 / 200, updatedAt: new Date().toISOString() },
           { id: 'ing-5', name: 'Caixa para Bolo Aro 15', category: 'Embalagens', unit: 'un', packageSize: 1, price: 4.50, pricePerUnit: 4.50, updatedAt: new Date().toISOString() },
           { id: 'ing-6', name: 'Prato de Bolo (Cakeboard)', category: 'Embalagens', unit: 'un', packageSize: 1, price: 3.00, pricePerUnit: 3.00, updatedAt: new Date().toISOString() },
-          { id: 'ing-7', name: 'Morangos Frescos', category: 'Frutas/Frescos', unit: 'g', packageSize: 250, price: 8.00, pricePerUnit: 8.00 / 250, updatedAt: new Date().toISOString() }
+          { id: 'ing-7', name: 'Morangos Frescos', category: 'Frutas/Frescos', unit: 'g', packageSize: 250, price: 8.00, pricePerUnit: 8.00 / 250, updatedAt: new Date().toISOString() },
+          { id: 'ing-8', name: 'Ovos', category: 'Ovos/Fermentos', unit: 'un', packageSize: 30, price: 18.00, pricePerUnit: 18.00 / 30, updatedAt: new Date().toISOString() }
         ];
 
         for (const ing of demoIngredients) {
