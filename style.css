@@ -1,0 +1,161 @@
+/*
+ * style.css - Custom styling for Precificação Confeitaria
+ * Defines beautiful themes, sliders, animations and glassmorphism.
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap');
+
+:root {
+  --font-title: 'Outfit', 'Inter', sans-serif;
+  --font-body: 'Inter', sans-serif;
+
+  /* Sweet Confectionery Theme (Soft cream, rose gold, warm accents) */
+  --bg-primary: #fffbf9;
+  --bg-card: #ffffff;
+  --color-primary: #ec4899; /* Deep rose */
+  --color-primary-hover: #db2777;
+  --color-secondary: #f43f5e; /* Coral rose */
+  --color-accent: #f59e0b; /* Amber */
+  --color-text-dark: #372521; /* Cocoa-dark */
+  --color-text-muted: #8c736e; /* Soft cocoa-gray */
+  --border-color: #f1ebe9;
+  
+  --shadow-sm: 0 2px 4px rgba(55, 37, 33, 0.04);
+  --shadow-md: 0 4px 12px rgba(55, 37, 33, 0.08);
+  --shadow-lg: 0 10px 25px -5px rgba(55, 37, 33, 0.12);
+}
+
+body {
+  font-family: var(--font-body);
+  background-color: var(--bg-primary);
+  color: var(--color-text-dark);
+  -webkit-tap-highlight-color: transparent;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-title);
+  color: var(--color-text-dark);
+}
+
+/* Glassmorphism Classes */
+.glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.glass-dark {
+  background: rgba(55, 37, 33, 0.9);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Page transitions */
+.page-fade-in {
+  animation: fadeIn 0.25s ease-out forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Custom Sliders (Tácteis para Mobile) */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+input[type="range"]::-webkit-slider-runnable-track {
+  background: #f1ebe9;
+  height: 8px;
+  border-radius: 999px;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  margin-top: -6px; /* Centering the thumb */
+  background-color: var(--color-primary);
+  height: 20px;
+  width: 20px;
+  border-radius: 50%;
+  border: 2px solid white;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.1s ease, background-color 0.1s ease;
+}
+
+input[type="range"]::-webkit-slider-thumb:active {
+  transform: scale(1.25);
+  background-color: var(--color-primary-hover);
+}
+
+/* Custom Scrollbar for sub-elements */
+.custom-scroll::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+.custom-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scroll::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 10px;
+}
+.custom-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
+}
+
+/* Hide Default Webkit Search Clear Button */
+input[type="search"]::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* Print Styles for Ficha Técnica (PDF export fallback) */
+@media print {
+  body {
+    background-color: #fff;
+    color: #000;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .print-only {
+    display: block !important;
+  }
+  .print-card {
+    border: 1px solid #ddd !important;
+    box-shadow: none !important;
+    break-inside: avoid;
+  }
+}
+
+/* Pulse highlight animation for update feedback */
+.pulse-highlight {
+  animation: pulseBg 1.5s ease-out;
+}
+
+@keyframes pulseBg {
+  0% {
+    background-color: rgba(236, 72, 153, 0.2);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+/* Toast container styling */
+#toast-container {
+  z-index: 9999;
+}
