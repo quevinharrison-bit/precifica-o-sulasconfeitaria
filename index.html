@@ -36,6 +36,10 @@
   
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    // Fallback de segurança caso a CDN falhe ou esteja offline
+    window.lucide = window.lucide || { createIcons: () => console.warn('Lucide Icons CDN offline') };
+  </script>
 </head>
 <body class="h-full flex flex-col bg-sweet-50 text-sweet-900 select-none antialiased">
 

@@ -1,5 +1,5 @@
 /**
- * db.js - Gerenciador de Persistência Local (IndexedDB)
+ * db.js - Gerenciador de Persistência Local (IndexedDB com fallback para LocalStorage)
  * Provê métodos assíncronos simples para salvar, ler, atualizar e excluir insumos, bases, produtos e configurações.
  */
 
@@ -8,52 +8,101 @@
   const DB_VERSION = 1;
 
   let dbInstance = null;
+  let useLocalStorageFallback = false;
+
+  // Banco de dados simulado no LocalStorage para caso o IndexedDB esteja bloqueado/indisponível
+  const lsDb = {
+    get(storeName, key) {
+      if (storeName === 'settings') {
+        const data = localStorage.getItem('db_settings_config');
+        return data ? JSON.parse(data) : null;
+      }
+      const data = localStorage.getItem('db_' + storeName);
+      const list = data ? JSON.parse(data) : [];
+      return list.find(item => item.id === key) || null;
+    },
+    getAll(storeName) {
+      if (storeName === 'settings') return [];
+      const data = localStorage.getItem('db_' + storeName);
+      return data ? JSON.parse(data) : [];
+    },
+    put(storeName, value) {
+      if (storeName === 'settings') {
+        localStorage.setItem('db_settings_config', JSON.stringify(value));
+        return value;
+      }
+      const data = localStorage.getItem('db_' + storeName);
+      let list = data ? JSON.parse(data) : [];
+      const idx = list.findIndex(item => item.id === value.id);
+      if (idx > -1) {
+        list[idx] = value;
+      } else {
+        list.push(value);
+      }
+      localStorage.setItem('db_' + storeName, JSON.stringify(list));
+      return value;
+    },
+    delete(storeName, key) {
+      if (storeName === 'settings') {
+        localStorage.removeItem('db_settings_config');
+        return true;
+      }
+      const data = localStorage.getItem('db_' + storeName);
+      let list = data ? JSON.parse(data) : [];
+      list = list.filter(item => item.id !== key);
+      localStorage.setItem('db_' + storeName, JSON.stringify(list));
+      return true;
+    }
+  };
 
   window.db = {
     /**
-     * Inicializa o banco de dados IndexedDB
+     * Inicializa o banco de dados
      */
     init() {
-      return new Promise((resolve, reject) => {
-        if (dbInstance) return resolve(dbInstance);
-
-        const request = indexedDB.open(DB_NAME, DB_VERSION);
-
-        request.onupgradeneeded = (event) => {
-          const db = event.target.result;
-
-          // Tabela de Insumos / Ingredientes
-          if (!db.objectStoreNames.contains('ingredients')) {
-            db.createObjectStore('ingredients', { keyPath: 'id' });
+      return new Promise((resolve) => {
+        try {
+          if (!window.indexedDB) {
+            console.warn('IndexedDB não é suportado pelo navegador. Usando fallback LocalStorage.');
+            useLocalStorageFallback = true;
+            this.initDefaultSettings().then(() => resolve(null));
+            return;
           }
 
-          // Tabela de Bases / Sub-receitas
-          if (!db.objectStoreNames.contains('bases')) {
-            db.createObjectStore('bases', { keyPath: 'id' });
-          }
+          const request = indexedDB.open(DB_NAME, DB_VERSION);
 
-          // Tabela de Produtos Finais
-          if (!db.objectStoreNames.contains('products')) {
-            db.createObjectStore('products', { keyPath: 'id' });
-          }
+          request.onupgradeneeded = (event) => {
+            const db = event.target.result;
 
-          // Tabela de Configurações
-          if (!db.objectStoreNames.contains('settings')) {
-            db.createObjectStore('settings', { keyPath: 'id' });
-          }
-        };
+            if (!db.objectStoreNames.contains('ingredients')) {
+              db.createObjectStore('ingredients', { keyPath: 'id' });
+            }
+            if (!db.objectStoreNames.contains('bases')) {
+              db.createObjectStore('bases', { keyPath: 'id' });
+            }
+            if (!db.objectStoreNames.contains('products')) {
+              db.createObjectStore('products', { keyPath: 'id' });
+            }
+            if (!db.objectStoreNames.contains('settings')) {
+              db.createObjectStore('settings', { keyPath: 'id' });
+            }
+          };
 
-        request.onsuccess = (event) => {
-          dbInstance = event.target.result;
-          
-          // Garantir configurações padrão
-          this.initDefaultSettings().then(() => resolve(dbInstance));
-        };
+          request.onsuccess = (event) => {
+            dbInstance = event.target.result;
+            window.db.initDefaultSettings().then(() => resolve(dbInstance));
+          };
 
-        request.onerror = (event) => {
-          console.error('Erro ao abrir o banco de dados:', event.target.error);
-          reject(event.target.error);
-        };
+          request.onerror = (event) => {
+            console.warn('Permissão negada ou erro ao abrir IndexedDB. Usando fallback LocalStorage:', event.target.error);
+            useLocalStorageFallback = true;
+            window.db.initDefaultSettings().then(() => resolve(null));
+          };
+        } catch (err) {
+          console.warn('Exceção ao abrir IndexedDB. Usando fallback LocalStorage:', err);
+          useLocalStorageFallback = true;
+          this.initDefaultSettings().then(() => resolve(null));
+        }
       });
     },
 
@@ -143,6 +192,7 @@
      * Obtém uma transação para a store especificada
      */
     getTransaction(storeName, mode = 'readonly') {
+      if (useLocalStorageFallback) return null;
       if (!dbInstance) {
         throw new Error('Banco de dados não inicializado. Chame db.init() primeiro.');
       }
@@ -153,6 +203,9 @@
      * Obtém um item pelo ID
      */
     get(storeName, key) {
+      if (useLocalStorageFallback) {
+        return Promise.resolve(lsDb.get(storeName, key));
+      }
       return new Promise((resolve, reject) => {
         try {
           const tx = this.getTransaction(storeName, 'readonly');
@@ -171,6 +224,9 @@
      * Obtém todos os itens de uma tabela
      */
     getAll(storeName) {
+      if (useLocalStorageFallback) {
+        return Promise.resolve(lsDb.getAll(storeName));
+      }
       return new Promise((resolve, reject) => {
         try {
           const tx = this.getTransaction(storeName, 'readonly');
@@ -189,6 +245,9 @@
      * Salva ou atualiza um item
      */
     put(storeName, value) {
+      if (useLocalStorageFallback) {
+        return Promise.resolve(lsDb.put(storeName, value));
+      }
       return new Promise((resolve, reject) => {
         try {
           const tx = this.getTransaction(storeName, 'readwrite');
@@ -207,6 +266,9 @@
      * Remove um item pelo ID
      */
     delete(storeName, key) {
+      if (useLocalStorageFallback) {
+        return Promise.resolve(lsDb.delete(storeName, key));
+      }
       return new Promise((resolve, reject) => {
         try {
           const tx = this.getTransaction(storeName, 'readwrite');
@@ -225,6 +287,14 @@
      * Limpa todos os dados de uma store
      */
     clear(storeName) {
+      if (useLocalStorageFallback) {
+        if (storeName === 'settings') {
+          localStorage.removeItem('db_settings_config');
+        } else {
+          localStorage.removeItem('db_' + storeName);
+        }
+        return Promise.resolve(true);
+      }
       return new Promise((resolve, reject) => {
         try {
           const tx = this.getTransaction(storeName, 'readwrite');

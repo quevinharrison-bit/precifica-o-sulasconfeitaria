@@ -5,6 +5,17 @@
 (() => {
   let activeTab = 'dashboard';
 
+  // Helper interno seguro para renderizar ícones lucide
+  function safeCreateIcons() {
+    if (window.lucide && typeof window.lucide.createIcons === 'function') {
+      try {
+        window.lucide.createIcons();
+      } catch (err) {
+        console.warn('Erro ao carregar ícones Lucide:', err);
+      }
+    }
+  }
+
   window.app = {
     /**
      * Inicialização da aplicação
@@ -14,7 +25,7 @@
         // 1. Inicializar tema salvo (Modo Escuro / Claro)
         this.initTheme();
 
-        // 2. Inicializar o banco de dados IndexedDB
+        // 2. Inicializar o banco de dados IndexedDB (com fallback para LocalStorage)
         await window.db.init();
 
         // 3. Inicializar módulos de dados
@@ -34,7 +45,27 @@
 
       } catch (err) {
         console.error('Falha ao iniciar app:', err);
-        this.showToast('Erro grave ao carregar banco de dados local.', 'error');
+        
+        // Esconder o loader e mostrar mensagem amigável de erro
+        const loader = document.getElementById('tab-loading');
+        if (loader) loader.classList.add('hidden');
+
+        const mainContent = document.getElementById('main-content');
+        if (mainContent) {
+          mainContent.innerHTML = `
+            <div class="p-6 bg-rose-50 text-rose-800 rounded-2xl border border-rose-200 text-center max-w-sm mx-auto my-12 shadow-sm">
+              <div class="w-12 h-12 bg-rose-100 rounded-full flex items-center justify-center text-rose-600 mx-auto mb-3">
+                <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+              </div>
+              <h3 class="font-bold text-sm">Erro de Carregamento</h3>
+              <p class="text-xs mt-1 text-rose-700 font-medium">Não foi possível iniciar o aplicativo devido a uma restrição de armazenamento local. Detalhes: ${err.message || err}</p>
+              <button onclick="location.reload()" class="mt-4 w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-2 rounded-xl text-xs transition-colors">
+                Tentar Recarregar
+              </button>
+            </div>
+          `;
+          safeCreateIcons();
+        }
       }
     },
 
@@ -56,9 +87,7 @@
           btnToggle.innerHTML = `<i data-lucide="moon" class="w-4 h-4"></i>`;
         }
       }
-      if (window.lucide) {
-        window.lucide.createIcons();
-      }
+      safeCreateIcons();
     },
 
     /**
@@ -73,10 +102,7 @@
         btnToggle.innerHTML = `<i data-lucide="${isDark ? 'sun' : 'moon'}" class="w-4 h-4"></i>`;
       }
       
-      if (window.lucide) {
-        window.lucide.createIcons();
-      }
-      
+      safeCreateIcons();
       this.showToast(isDark ? 'Modo Escuro ativado!' : 'Modo Claro ativado!', 'info');
     },
 
@@ -120,7 +146,7 @@
         window.products.render();
       }
 
-      window.lucide.createIcons();
+      safeCreateIcons();
     },
 
     /**
@@ -247,7 +273,7 @@
       `;
 
       container.appendChild(toast);
-      window.lucide.createIcons();
+      safeCreateIcons();
 
       // Trigger de animação de entrada
       requestAnimationFrame(() => {
@@ -264,8 +290,12 @@
     }
   };
 
-  // Iniciar a aplicação após o DOM carregar
-  window.addEventListener('DOMContentLoaded', () => {
+  // Iniciar a aplicação após o DOM carregar de forma totalmente tolerante
+  if (document.readyState === 'loading') {
+    window.addEventListener('DOMContentLoaded', () => {
+      window.app.init();
+    });
+  } else {
     window.app.init();
-  });
+  }
 })();
