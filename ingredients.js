@@ -11,7 +11,7 @@
      * Inicializa o módulo de insumos
      */
     async init() {
-      await this.loadData();
+      await window.ingredients.loadData();
     },
 
     /**
@@ -59,7 +59,7 @@
 
           <!-- Lista de Insumos -->
           <div class="space-y-2.5" id="ingredients-container">
-            ${filtered.length === 0 ? this.renderEmptyState() : filtered.map(item => this.renderIngredientCard(item)).join('')}
+            ${filtered.length === 0 ? window.ingredients.renderEmptyState() : filtered.map(item => window.ingredients.renderIngredientCard(item)).join('')}
           </div>
         </div>
 
@@ -142,8 +142,8 @@
         </div>
       `;
 
-      lucide.createIcons();
-      this.registerEvents();
+      if (window.lucide) window.lucide.createIcons();
+      window.ingredients.registerEvents();
     },
 
     /**
@@ -213,7 +213,7 @@
       if (searchInput) {
         searchInput.addEventListener('input', (e) => {
           searchFilter = e.target.value;
-          this.render();
+          window.ingredients.render();
           // Manter o foco no input
           const newSearchInput = document.getElementById('search-ingredients');
           newSearchInput.focus();
@@ -224,12 +224,12 @@
       // Botões do Modal
       const btnAdd = document.getElementById('btn-add-ingredient');
       if (btnAdd) {
-        btnAdd.addEventListener('click', () => this.openModal());
+        btnAdd.addEventListener('click', () => window.ingredients.openModal());
       }
 
       const btnClose = document.getElementById('close-ingredient-modal');
       if (btnClose) {
-        btnClose.addEventListener('click', () => this.closeModal());
+        btnClose.addEventListener('click', () => window.ingredients.closeModal());
       }
 
       const selectUnit = document.getElementById('ingredient-unit');
@@ -281,7 +281,7 @@
       if (form) {
         form.addEventListener('submit', async (e) => {
           e.preventDefault();
-          await this.saveIngredient();
+          await window.ingredients.saveIngredient();
         });
       }
 
@@ -291,14 +291,14 @@
         btnDelete.addEventListener('click', async () => {
           const id = document.getElementById('ingredient-id').value;
           if (id && confirm('Deseja realmente excluir este insumo? Isso afetará receitas e produtos finais que utilizam este item.')) {
-            await this.deleteIngredient(id);
+            await window.ingredients.deleteIngredient(id);
           }
         });
       }
 
       // Disponibilizar globalmente para o onclick
       window.appActions = window.appActions || {};
-      window.appActions.editIngredient = (id) => this.openModal(id);
+      window.appActions.editIngredient = (id) => window.ingredients.openModal(id);
     },
 
     /**
@@ -345,7 +345,7 @@
       }
 
       modal.classList.remove('hidden');
-      lucide.createIcons();
+      if (window.lucide) window.lucide.createIcons();
     },
 
     /**
@@ -356,11 +356,21 @@
       modal.classList.add('hidden');
     },
 
+    // ID generator fallback seguro e offline para navegadores antigos ou contextos não seguros
+    generateUUID() {
+      if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+        try {
+          return crypto.randomUUID();
+        } catch (e) {}
+      }
+      return 'id-' + Math.random().toString(36).substr(2, 9) + '-' + Date.now();
+    },
+
     /**
      * Salva o ingrediente no banco de dados
      */
     async saveIngredient() {
-      const id = document.getElementById('ingredient-id').value || crypto.randomUUID();
+      const id = document.getElementById('ingredient-id').value || window.ingredients.generateUUID();
       const name = document.getElementById('ingredient-name').value;
       const category = document.getElementById('ingredient-category').value;
       const unit = document.getElementById('ingredient-unit').value;
@@ -387,15 +397,15 @@
 
       try {
         await window.db.put('ingredients', data);
-        window.app.showToast(id ? 'Insumo atualizado!' : 'Insumo cadastrado com sucesso!', 'success');
+        window.app.showToast(id && document.getElementById('ingredient-id').value ? 'Insumo atualizado!' : 'Insumo cadastrado com sucesso!', 'success');
         
         // Recarregar dados e atualizar UI
-        await this.loadData();
-        this.closeModal();
-        this.render();
+        await window.ingredients.loadData();
+        window.ingredients.closeModal();
+        window.ingredients.render();
         
         // Recalcular bases e produtos se for uma edição!
-        await this.recalculateAllBasesAndProducts();
+        await window.ingredients.recalculateAllBasesAndProducts();
       } catch (err) {
         console.error(err);
         window.app.showToast('Erro ao salvar insumo.', 'error');
@@ -409,9 +419,9 @@
       try {
         await window.db.delete('ingredients', id);
         window.app.showToast('Insumo excluído com sucesso!', 'success');
-        await this.loadData();
-        this.closeModal();
-        this.render();
+        await window.ingredients.loadData();
+        window.ingredients.closeModal();
+        window.ingredients.render();
       } catch (err) {
         console.error(err);
         window.app.showToast('Erro ao excluir insumo.', 'error');

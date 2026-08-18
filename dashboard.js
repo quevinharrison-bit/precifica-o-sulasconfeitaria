@@ -12,7 +12,7 @@
      * Inicializa o painel
      */
     async init() {
-      await this.loadData();
+      await window.dashboard.loadData();
     },
 
     /**
@@ -126,7 +126,7 @@
               <p class="text-[10px] text-sweet-600">Como se divide o preço médio das suas vendas</p>
             </div>
             
-            ${totalProducts === 0 ? this.renderNoDataChart() : this.renderDonutChart(avgCpvPercent, avgIndirectPercent, avgLaborPercent, avgMargin, avgProfitValue)}
+            ${totalProducts === 0 ? window.dashboard.renderNoDataChart() : window.dashboard.renderDonutChart(avgCpvPercent, avgIndirectPercent, avgLaborPercent, avgMargin, avgProfitValue)}
           </div>
 
           <!-- Produtos em Destaque (Mais Lucrativos) -->
@@ -141,7 +141,7 @@
                 <div class="bg-white p-4 text-center border border-dashed border-sweet-200 rounded-2xl text-xs text-sweet-600">
                   Os produtos mais lucrativos aparecerão aqui após você precificá-los.
                 </div>
-              ` : topProducts.map((p, idx) => this.renderTopProductRow(p, idx)).join('')}
+              ` : topProducts.map((p, idx) => window.dashboard.renderTopProductRow(p, idx)).join('')}
             </div>
           </div>
 
@@ -197,8 +197,8 @@
         </div>
       `;
 
-      lucide.createIcons();
-      this.registerEvents();
+      if (window.lucide) window.lucide.createIcons();
+      window.dashboard.registerEvents();
     },
 
     /**
@@ -248,7 +248,7 @@
      */
     renderDonutChart(cpv, indirect, labor, margin, avgProfitVal) {
       const total = cpv + indirect + labor + Math.max(0, margin);
-      if (total === 0) return this.renderNoDataChart();
+      if (total === 0) return window.dashboard.renderNoDataChart();
 
       const pCpv = cpv;
       const pIndirect = indirect;

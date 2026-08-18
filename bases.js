@@ -15,7 +15,7 @@
      * Inicializa o módulo de bases
      */
     async init() {
-      await this.loadData();
+      await window.bases.loadData();
     },
 
     /**
@@ -61,7 +61,7 @@
 
           <!-- Lista de Bases -->
           <div class="space-y-2.5" id="bases-container">
-            ${filtered.length === 0 ? this.renderEmptyState() : filtered.map(item => this.renderBaseCard(item)).join('')}
+            ${filtered.length === 0 ? window.bases.renderEmptyState() : filtered.map(item => window.bases.renderBaseCard(item)).join('')}
           </div>
         </div>
 
@@ -162,8 +162,8 @@
         </div>
       `;
 
-      lucide.createIcons();
-      this.registerEvents();
+      if (window.lucide) window.lucide.createIcons();
+      window.bases.registerEvents();
     },
 
     /**
@@ -221,7 +221,7 @@
       if (searchInput) {
         searchInput.addEventListener('input', (e) => {
           searchFilter = e.target.value;
-          this.render();
+          window.bases.render();
           const newSearchInput = document.getElementById('search-bases');
           newSearchInput.focus();
           newSearchInput.setSelectionRange(newSearchInput.value.length, newSearchInput.value.length);
@@ -230,10 +230,10 @@
 
       // Modal triggers
       const btnAdd = document.getElementById('btn-add-base');
-      if (btnAdd) btnAdd.addEventListener('click', () => this.openModal());
+      if (btnAdd) btnAdd.addEventListener('click', () => window.bases.openModal());
 
       const btnClose = document.getElementById('close-base-modal');
-      if (btnClose) btnClose.addEventListener('click', () => this.closeModal());
+      if (btnClose) btnClose.addEventListener('click', () => window.bases.closeModal());
 
       // Seletor de ingrediente dinâmico no modal
       const addIngSelect = document.getElementById('base-add-ingredient-id');
@@ -293,8 +293,8 @@
             qtyInput.value = '';
             unitBadge.textContent = '';
 
-            this.updateIngredientsListUI();
-            this.calculateBasesCostPreview();
+            window.bases.updateIngredientsListUI();
+            window.bases.calculateBasesCostPreview();
           }
         });
       }
@@ -302,11 +302,11 @@
       // Atualização de rendimento
       const yieldInput = document.getElementById('base-yieldAmount');
       if (yieldInput) {
-        yieldInput.addEventListener('input', () => this.calculateBasesCostPreview());
+        yieldInput.addEventListener('input', () => window.bases.calculateBasesCostPreview());
       }
       const yieldUnitSelect = document.getElementById('base-yieldUnit');
       if (yieldUnitSelect) {
-        yieldUnitSelect.addEventListener('change', () => this.calculateBasesCostPreview());
+        yieldUnitSelect.addEventListener('change', () => window.bases.calculateBasesCostPreview());
       }
 
       // Submissão do formulário
@@ -314,7 +314,7 @@
       if (form) {
         form.addEventListener('submit', async (e) => {
           e.preventDefault();
-          await this.saveBase();
+          await window.bases.saveBase();
         });
       }
 
@@ -324,18 +324,18 @@
         btnDelete.addEventListener('click', async () => {
           const id = document.getElementById('base-id').value;
           if (id && confirm('Deseja realmente excluir esta base? Isto a removerá de todos os produtos cadastrados.')) {
-            await this.deleteBase(id);
+            await window.bases.deleteBase(id);
           }
         });
       }
 
       // Ações globais
       window.appActions = window.appActions || {};
-      window.appActions.editBase = (id) => this.openModal(id);
+      window.appActions.editBase = (id) => window.bases.openModal(id);
       window.appActions.removeBaseIngredient = (ingId) => {
         currentBaseIngredients = currentBaseIngredients.filter(item => item.ingredientId !== ingId);
-        this.updateIngredientsListUI();
-        this.calculateBasesCostPreview();
+        window.bases.updateIngredientsListUI();
+        window.bases.calculateBasesCostPreview();
       };
     },
 
@@ -349,13 +349,13 @@
       const btnDelete = document.getElementById('btn-delete-base-modal');
 
       // Recarregar ingredientes disponíveis
-      await this.loadData();
+      await window.bases.loadData();
 
       form.reset();
       document.getElementById('base-id').value = '';
       currentBaseIngredients = [];
-      this.updateIngredientsListUI();
-      this.calculateBasesCostPreview();
+      window.bases.updateIngredientsListUI();
+      window.bases.calculateBasesCostPreview();
 
       // Re-injetar lista de ingredientes atualizada no dropdown
       const selectAdd = document.getElementById('base-add-ingredient-id');
@@ -390,8 +390,8 @@
           });
 
           btnDelete.classList.remove('hidden');
-          this.updateIngredientsListUI();
-          this.calculateBasesCostPreview();
+          window.bases.updateIngredientsListUI();
+          window.bases.calculateBasesCostPreview();
         }
       } else {
         title.innerHTML = `<i data-lucide="egg" class="w-5 h-5 text-sweet-500"></i> Criar Base / Sub-receita`;
@@ -399,7 +399,7 @@
       }
 
       modal.classList.remove('hidden');
-      lucide.createIcons();
+      if (window.lucide) window.lucide.createIcons();
     },
 
     /**
@@ -440,7 +440,7 @@
         `;
       }).join('');
       
-      lucide.createIcons();
+      if (window.lucide) window.lucide.createIcons();
     },
 
     /**
@@ -467,11 +467,21 @@
       unitCostLabel.textContent = `${window.app.formatCurrency(unitCost)}/${yieldUnit === 'g' || yieldUnit === 'ml' ? yieldUnit : 'un'}`;
     },
 
+    // ID generator fallback
+    generateUUID() {
+      if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+        try {
+          return crypto.randomUUID();
+        } catch (e) {}
+      }
+      return 'id-' + Math.random().toString(36).substr(2, 9) + '-' + Date.now();
+    },
+
     /**
      * Salva a base no banco de dados
      */
     async saveBase() {
-      const id = document.getElementById('base-id').value || crypto.randomUUID();
+      const id = document.getElementById('base-id').value || window.bases.generateUUID();
       const name = document.getElementById('base-name').value;
       const yieldAmount = parseFloat(document.getElementById('base-yieldAmount').value);
       const yieldUnit = document.getElementById('base-yieldUnit').value;
@@ -505,12 +515,12 @@
 
       try {
         await window.db.put('bases', data);
-        window.app.showToast(id ? 'Base atualizada!' : 'Base cadastrada com sucesso!', 'success');
+        window.app.showToast(id && document.getElementById('base-id').value ? 'Base atualizada!' : 'Base cadastrada com sucesso!', 'success');
         
         // Recarregar dados e recalcular produtos
-        await this.loadData();
-        this.closeModal();
-        this.render();
+        await window.bases.loadData();
+        window.bases.closeModal();
+        window.bases.render();
 
         // Recalcular produtos finais que usam esta base
         await window.ingredients.recalculateAllBasesAndProducts();
@@ -527,9 +537,9 @@
       try {
         await window.db.delete('bases', id);
         window.app.showToast('Base excluída com sucesso!', 'success');
-        await this.loadData();
-        this.closeModal();
-        this.render();
+        await window.bases.loadData();
+        window.bases.closeModal();
+        window.bases.render();
       } catch (err) {
         console.error(err);
         window.app.showToast('Erro ao excluir base.', 'error');

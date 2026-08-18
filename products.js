@@ -16,7 +16,7 @@
      * Inicializa o módulo de produtos
      */
     async init() {
-      await this.loadData();
+      await window.products.loadData();
     },
 
     /**
@@ -64,7 +64,7 @@
 
           <!-- Lista de Produtos -->
           <div class="space-y-2.5" id="products-container">
-            ${filtered.length === 0 ? this.renderEmptyState() : filtered.map(item => this.renderProductCard(item)).join('')}
+            ${filtered.length === 0 ? window.products.renderEmptyState() : filtered.map(item => window.products.renderProductCard(item)).join('')}
           </div>
         </div>
 
@@ -273,8 +273,8 @@
         </div>
       `;
 
-      lucide.createIcons();
-      this.registerEvents();
+      if (window.lucide) window.lucide.createIcons();
+      window.products.registerEvents();
     },
 
     /**
@@ -400,7 +400,7 @@
       if (searchInput) {
         searchInput.addEventListener('input', (e) => {
           searchFilter = e.target.value;
-          this.render();
+          window.products.render();
           const newSearchInput = document.getElementById('search-products');
           newSearchInput.focus();
           newSearchInput.setSelectionRange(newSearchInput.value.length, newSearchInput.value.length);
@@ -409,15 +409,15 @@
 
       // Modal
       const btnAdd = document.getElementById('btn-add-product');
-      if (btnAdd) btnAdd.addEventListener('click', () => this.openModal());
+      if (btnAdd) btnAdd.addEventListener('click', () => window.products.openModal());
 
       const btnClose = document.getElementById('close-product-modal');
-      if (btnClose) btnClose.addEventListener('click', () => this.closeModal());
+      if (btnClose) btnClose.addEventListener('click', () => window.products.closeModal());
 
       // Seletor de tipo de item
       const typeSelect = document.getElementById('product-add-item-type');
       if (typeSelect) {
-        typeSelect.addEventListener('change', () => this.updateItemSelector());
+        typeSelect.addEventListener('change', () => window.products.updateItemSelector());
       }
 
       // Adicionar item à receita
@@ -474,8 +474,8 @@
           }
 
           qtyInput.value = '';
-          this.updateProductItemsUI();
-          this.recalculatePricing();
+          window.products.updateProductItemsUI();
+          window.products.recalculatePricing();
         });
       }
 
@@ -485,7 +485,7 @@
       if (rangeIndirect && lblIndirect) {
         rangeIndirect.addEventListener('input', (e) => {
           lblIndirect.textContent = `${e.target.value}%`;
-          this.recalculatePricing();
+          window.products.recalculatePricing();
         });
       }
 
@@ -494,7 +494,7 @@
       if (rangeProfit && lblProfit) {
         rangeProfit.addEventListener('input', (e) => {
           lblProfit.textContent = `${e.target.value}%`;
-          this.recalculatePricing();
+          window.products.recalculatePricing();
         });
       }
 
@@ -503,9 +503,9 @@
       const inputTax = document.getElementById('product-tax-percent');
       const inputPriceSet = document.getElementById('product-price-set');
 
-      if (inputLaborTime) inputLaborTime.addEventListener('input', () => this.recalculatePricing());
-      if (inputTax) inputTax.addEventListener('input', () => this.recalculatePricing());
-      if (inputPriceSet) inputPriceSet.addEventListener('input', () => this.recalculatePricing(true));
+      if (inputLaborTime) inputLaborTime.addEventListener('input', () => window.products.recalculatePricing());
+      if (inputTax) inputTax.addEventListener('input', () => window.products.recalculatePricing());
+      if (inputPriceSet) inputPriceSet.addEventListener('input', () => window.products.recalculatePricing(true));
 
       // Botão de Usar Preço Sugerido
       const btnUseSuggested = document.getElementById('btn-use-suggested');
@@ -514,7 +514,7 @@
           const suggested = parseFloat(document.getElementById('res-price-suggested').textContent.replace('R$', '').replace('.', '').replace(',', '.')) || 0;
           if (suggested > 0) {
             inputPriceSet.value = suggested.toFixed(2);
-            this.recalculatePricing(true);
+            window.products.recalculatePricing(true);
           }
         });
       }
@@ -525,7 +525,7 @@
         btnDelete.addEventListener('click', async () => {
           const id = document.getElementById('product-id').value;
           if (id && confirm('Deseja realmente excluir este produto?')) {
-            await this.deleteProduct(id);
+            await window.products.deleteProduct(id);
           }
         });
       }
@@ -534,7 +534,7 @@
       const btnSave = document.getElementById('btn-save-product');
       if (btnSave) {
         btnSave.addEventListener('click', async () => {
-          await this.saveProduct();
+          await window.products.saveProduct();
         });
       }
 
@@ -542,17 +542,17 @@
       const btnExport = document.getElementById('btn-export-pdf');
       if (btnExport) {
         btnExport.addEventListener('click', () => {
-          this.exportTechCard();
+          window.products.exportTechCard();
         });
       }
 
       // Ações globais
       window.appActions = window.appActions || {};
-      window.appActions.editProduct = (id) => this.openModal(id);
+      window.appActions.editProduct = (id) => window.products.openModal(id);
       window.appActions.removeProductItem = (itemId, type) => {
         currentProductItems = currentProductItems.filter(item => !(item.itemId === itemId && item.type === type));
-        this.updateProductItemsUI();
-        this.recalculatePricing();
+        window.products.updateProductItemsUI();
+        window.products.recalculatePricing();
       };
     },
 
@@ -566,7 +566,7 @@
       const btnDelete = document.getElementById('btn-delete-product-modal');
       const lblHourRate = document.getElementById('lbl-settings-hour-rate');
 
-      await this.loadData();
+      await window.products.loadData();
       form.reset();
       document.getElementById('product-id').value = '';
       currentProductItems = [];
@@ -581,9 +581,9 @@
       document.getElementById('product-profit-percent').value = 40;
       document.getElementById('lbl-profit-percent').textContent = `40%`;
 
-      this.updateItemSelector();
-      this.updateProductItemsUI();
-      this.recalculatePricing();
+      window.products.updateItemSelector();
+      window.products.updateProductItemsUI();
+      window.products.recalculatePricing();
 
       if (id) {
         const item = productsList.find(p => p.id === id);
@@ -638,11 +638,11 @@
           }
 
           btnDelete.classList.remove('hidden');
-          this.updateProductItemsUI();
-          this.recalculatePricing();
+          window.products.updateProductItemsUI();
+          window.products.recalculatePricing();
           
           if (item.finalPriceSet) {
-            this.recalculatePricing(true);
+            window.products.recalculatePricing(true);
           }
         }
       } else {
@@ -651,7 +651,7 @@
       }
 
       modal.classList.remove('hidden');
-      lucide.createIcons();
+      if (window.lucide) window.lucide.createIcons();
     },
 
     /**
@@ -698,7 +698,7 @@
         `;
       }).join('');
       
-      lucide.createIcons();
+      if (window.lucide) window.lucide.createIcons();
     },
 
     /**
@@ -784,11 +784,21 @@
       }
     },
 
+    // ID generator fallback
+    generateUUID() {
+      if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+        try {
+          return crypto.randomUUID();
+        } catch (e) {}
+      }
+      return 'id-' + Math.random().toString(36).substr(2, 9) + '-' + Date.now();
+    },
+
     /**
      * Salva o produto
      */
     async saveProduct() {
-      const id = document.getElementById('product-id').value || crypto.randomUUID();
+      const id = document.getElementById('product-id').value || window.products.generateUUID();
       const name = document.getElementById('product-name').value;
       
       if (!name) {
@@ -854,11 +864,11 @@
 
       try {
         await window.db.put('products', data);
-        window.app.showToast(id ? 'Produto atualizado!' : 'Produto precificado e salvo!', 'success');
+        window.app.showToast(id && document.getElementById('product-id').value ? 'Produto atualizado!' : 'Produto precificado e salvo!', 'success');
         
-        await this.loadData();
-        this.closeModal();
-        this.render();
+        await window.products.loadData();
+        window.products.closeModal();
+        window.products.render();
       } catch (err) {
         console.error(err);
         window.app.showToast('Erro ao salvar produto.', 'error');
@@ -872,9 +882,9 @@
       try {
         await window.db.delete('products', id);
         window.app.showToast('Produto excluído!', 'success');
-        await this.loadData();
-        this.closeModal();
-        this.render();
+        await window.products.loadData();
+        window.products.closeModal();
+        window.products.render();
       } catch (err) {
         console.error(err);
         window.app.showToast('Erro ao excluir produto.', 'error');

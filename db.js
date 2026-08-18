@@ -110,9 +110,9 @@
      * Inicializa as configurações padrões caso não existam e injeta sementes de dados de teste
      */
     async initDefaultSettings() {
-      const settings = await this.get('settings', 'config');
+      const settings = await window.db.get('settings', 'config');
       if (!settings) {
-        await this.put('settings', {
+        await window.db.put('settings', {
           id: 'config',
           workHourRate: 15.00, // R$ 15.00 por hora padrão
           indirectCostDefault: 15.00, // 15% para custos operacionais padrão
@@ -121,7 +121,7 @@
       }
 
       // Carregar dados de demonstração se a tabela de ingredientes estiver vazia
-      const ingredients = await this.getAll('ingredients');
+      const ingredients = await window.db.getAll('ingredients');
       if (ingredients.length === 0) {
         // 1. Cadastrar insumos demo
         const demoIngredients = [
@@ -135,7 +135,7 @@
         ];
 
         for (const ing of demoIngredients) {
-          await this.put('ingredients', ing);
+          await window.db.put('ingredients', ing);
         }
 
         // 2. Cadastrar base demo (Recheio Brigadeiro)
@@ -154,7 +154,7 @@
           costPerUnit: brigadeiroCost / 400,
           updatedAt: new Date().toISOString()
         };
-        await this.put('bases', demoBase);
+        await window.db.put('bases', demoBase);
 
         // 3. Cadastrar produto demo (Bolo Decorado Morango Aro 15)
         const cpv = brigadeiroCost + 3.00 + 4.50 + (150 * (8.00 / 250)); // CPV = 22.15
@@ -184,7 +184,7 @@
           breakevenPrice: totalCost / 0.95,
           updatedAt: new Date().toISOString()
         };
-        await this.put('products', demoProduct);
+        await window.db.put('products', demoProduct);
       }
     },
 
@@ -208,7 +208,7 @@
       }
       return new Promise((resolve, reject) => {
         try {
-          const tx = this.getTransaction(storeName, 'readonly');
+          const tx = window.db.getTransaction(storeName, 'readonly');
           const store = tx.objectStore(storeName);
           const request = store.get(key);
 
@@ -229,7 +229,7 @@
       }
       return new Promise((resolve, reject) => {
         try {
-          const tx = this.getTransaction(storeName, 'readonly');
+          const tx = window.db.getTransaction(storeName, 'readonly');
           const store = tx.objectStore(storeName);
           const request = store.getAll();
 
@@ -250,7 +250,7 @@
       }
       return new Promise((resolve, reject) => {
         try {
-          const tx = this.getTransaction(storeName, 'readwrite');
+          const tx = window.db.getTransaction(storeName, 'readwrite');
           const store = tx.objectStore(storeName);
           const request = store.put(value);
 
@@ -271,7 +271,7 @@
       }
       return new Promise((resolve, reject) => {
         try {
-          const tx = this.getTransaction(storeName, 'readwrite');
+          const tx = window.db.getTransaction(storeName, 'readwrite');
           const store = tx.objectStore(storeName);
           const request = store.delete(key);
 
@@ -297,7 +297,7 @@
       }
       return new Promise((resolve, reject) => {
         try {
-          const tx = this.getTransaction(storeName, 'readwrite');
+          const tx = window.db.getTransaction(storeName, 'readwrite');
           const store = tx.objectStore(storeName);
           const request = store.clear();
 
