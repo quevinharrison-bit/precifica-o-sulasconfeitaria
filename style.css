@@ -25,6 +25,23 @@
   --shadow-lg: 0 10px 25px -5px rgba(55, 37, 33, 0.12);
 }
 
+html.dark {
+  --bg-primary: #120a08; /* Cocoa black deep background */
+  --bg-card: #1c1210; /* Dark cocoa card background */
+  --color-text-dark: #f5eae6; /* Cream light text */
+  --color-text-muted: #a38d89; /* Warm cocoa-gray text */
+  --border-color: #2b1d1a; /* Dark border */
+  
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+}
+
+/* Transições Suaves de Tema */
+body, div, nav, header, main, footer, button, input, select, p, h1, h2, h3, h4, span, table, th, td {
+  transition: background-color 0.25s ease, border-color 0.25s ease, color 0.2s ease, opacity 0.2s ease;
+}
+
 body {
   font-family: var(--font-body);
   background-color: var(--bg-primary);
@@ -35,6 +52,60 @@ body {
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-title);
   color: var(--color-text-dark);
+}
+
+/* Overrides de classes Tailwind para modo escuro automático sem alterar templates JS */
+html.dark .bg-white, 
+html.dark select, 
+html.dark input, 
+html.dark textarea {
+  background-color: var(--bg-card) !important;
+  color: var(--color-text-dark) !important;
+}
+
+html.dark .bg-sweet-50 {
+  background-color: var(--bg-primary) !important;
+}
+
+html.dark .bg-sweet-100 {
+  background-color: var(--bg-primary) !important;
+}
+
+html.dark .text-sweet-900 {
+  color: var(--color-text-dark) !important;
+}
+
+html.dark .text-sweet-800 {
+  color: var(--color-text-dark) !important;
+  opacity: 0.9;
+}
+
+html.dark .text-sweet-600 {
+  color: var(--color-text-muted) !important;
+}
+
+html.dark .border-sweet-200\/50, 
+html.dark .border-sweet-200, 
+html.dark .border-sweet-100,
+html.dark .border-sweet-300 {
+  border-color: var(--border-color) !important;
+}
+
+html.dark .glass {
+  background: rgba(28, 18, 16, 0.75) !important;
+  border-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+html.dark .nav-item.text-sweet-500 {
+  color: var(--color-primary) !important;
+}
+
+html.dark .bg-sweet-100\/50 {
+  background-color: rgba(28, 18, 16, 0.4) !important;
+}
+
+html.dark input[type="range"]::-webkit-slider-runnable-track {
+  background: var(--border-color) !important;
 }
 
 /* Glassmorphism Classes */
