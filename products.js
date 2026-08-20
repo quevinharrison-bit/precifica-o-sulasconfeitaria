@@ -11,28 +11,47 @@
   let searchFilter = '';
   let currentProductItems = []; // Itens inseridos no produto em edição
 
-  // Função auxiliar inteligente para estimar o peso/volume de 1 xícara
-  const getIngredientCupWeight = (ing) => {
-    if (ing.cupWeight > 0) return ing.cupWeight;
-    const unit = ing.unit;
-    const name = (ing.name || '').toLowerCase();
-    
-    if (unit === 'L' || unit === 'ml') {
-      return 240; // 1 xícara de líquidos = 240ml
+  // Função auxiliar de conversão para todas as medidas caseiras com sugestões inteligentes
+  const convertCaseiraToGramature = (ing, measureType) => {
+    let cup = ing.cupWeight > 0 ? ing.cupWeight : 150;
+    if (!(ing.cupWeight > 0)) {
+      const name = (ing.name || '').toLowerCase();
+      const unit = ing.unit;
+      if (unit === 'L' || unit === 'ml') {
+        cup = 240;
+      } else if (name.includes('farinha') || name.includes('trigo') || name.includes('amido') || name.includes('polvilho')) {
+        cup = 120;
+      } else if (name.includes('açúcar') || name.includes('acucar') || name.includes('adoçante') || name.includes('cristal') || name.includes('refinado')) {
+        cup = 180;
+      } else if (name.includes('cacau') || name.includes('chocolate') || name.includes('cacau em pó') || name.includes('chocolate em pó')) {
+        cup = 90;
+      } else if (name.includes('manteiga') || name.includes('margarina')) {
+        cup = 200;
+      }
     }
-    if (name.includes('farinha') || name.includes('trigo')) {
-      return 120; // 1 xícara de farinha = 120g
+
+    let sopa = ing.spoonSopaWeight > 0 ? ing.spoonSopaWeight : Math.round(cup / 12);
+    if (!(ing.spoonSopaWeight > 0)) {
+      if (cup === 240) sopa = 15;
+      else if (cup === 120) sopa = 10;
+      else if (cup === 180) sopa = 12;
+      else if (cup === 90) sopa = 6;
+      else if (cup === 200) sopa = 12;
     }
-    if (name.includes('açúcar') || name.includes('acucar') || name.includes('adoçante')) {
-      return 200; // 1 xícara de açúcar = 200g
+
+    let sobremesa = ing.spoonSobremesaWeight > 0 ? ing.spoonSobremesaWeight : Math.round(sopa * (2/3));
+    let cha = ing.spoonChaWeight > 0 ? ing.spoonChaWeight : Math.round(sopa / 3);
+
+    switch (measureType) {
+      case 'xicara': return cup;
+      case 'xicara_meia': return cup * 0.5;
+      case 'xicara_terco': return cup * 0.3333;
+      case 'xicara_quarto': return cup * 0.25;
+      case 'colher_sopa': return sopa;
+      case 'colher_sobremesa': return sobremesa;
+      case 'colher_cha': return cha;
+      default: return 1;
     }
-    if (name.includes('cacau') || name.includes('chocolate')) {
-      return 90; // 1 xícara de cacau = 90g
-    }
-    if (name.includes('manteiga') || name.includes('margarina')) {
-      return 200; // 1 xícara de manteiga = 200g
-    }
-    return 150; // Média padrão para secos
   };
 
   window.products = {
@@ -116,7 +135,7 @@
                 <div>
                   <label class="block text-xs font-semibold text-sweet-800 mb-1" for="product-name">Nome do Produto para Venda</label>
                   <input type="text" id="product-name" required placeholder="Ex: Bolo Decorado Morango Aro 15"
-                    class="w-full px-3 py-2 border border-sweet-200 rounded-xl focus:outline-none focus:border-sweet-500 text-sm font-medium">
+                    class="w-full h-12 px-3 py-2 border border-sweet-200 rounded-xl focus:outline-none focus:border-sweet-500 text-base font-medium">
                 </div>
               </div>
 
@@ -124,38 +143,39 @@
               <div class="space-y-3">
                 <h4 class="text-xs font-bold text-sweet-500 uppercase tracking-wider">2. Composição e Insumos</h4>
                 
-                <div class="p-3 bg-sweet-100/50 rounded-2xl border border-sweet-200 space-y-3">
+                <div class="p-3.5 bg-sweet-100/50 rounded-2xl border border-sweet-200 space-y-4">
                   
-                  <!-- Adicionar Item Seletor -->
-                  <div class="grid grid-cols-12 gap-2">
-                    <div class="col-span-4">
+                  <div class="grid grid-cols-3 gap-3">
+                    <div>
+                      <label class="block text-xs font-semibold text-sweet-800 mb-1" for="product-add-item-type">Tipo de Item</label>
                       <select id="product-add-item-type"
-                        class="w-full px-2.5 py-1.5 border border-sweet-200 rounded-xl focus:outline-none focus:border-sweet-500 text-xs font-medium bg-white">
+                        class="w-full h-12 px-3 py-2 border border-sweet-200 rounded-xl focus:outline-none focus:border-sweet-500 text-base font-medium bg-white">
                         <option value="base">Sub-receita (Base)</option>
                         <option value="ingredient">Ingrediente Avulso</option>
                         <option value="package">Embalagem</option>
                       </select>
                     </div>
-                    <div class="col-span-5">
+                    <div class="col-span-2">
+                      <label class="block text-xs font-semibold text-sweet-800 mb-1">Item / Receita</label>
                       <select id="product-add-item-id"
-                        class="w-full px-2.5 py-1.5 border border-sweet-200 rounded-xl focus:outline-none focus:border-sweet-500 text-xs font-medium bg-white">
+                        class="w-full h-12 px-3 py-2 border border-sweet-200 rounded-xl focus:outline-none focus:border-sweet-500 text-base font-medium bg-white">
                         <!-- Dinâmico conforme tipo -->
                       </select>
                     </div>
-                    <div class="col-span-3 relative">
-                      <input type="number" id="product-add-item-qty" step="0.01" min="0.01" placeholder="Qtd"
-                        class="w-full pl-2 pr-7 py-1.5 border border-sweet-200 rounded-xl focus:outline-none focus:border-sweet-500 text-xs font-medium">
-                      <span class="absolute right-2 top-2 text-[10px] text-sweet-600" id="product-add-unit-badge"></span>
-                    </div>
+                  </div>
+
+                  <!-- Área Dinâmica de Fracionamento / Quantidade -->
+                  <div id="product-qty-section" class="grid grid-cols-12 gap-3">
+                    <!-- Gerado de forma reativa pelo script no updateItemSelector -->
                   </div>
                   
                   <button type="button" id="btn-product-add-item"
-                    class="w-full bg-sweet-500 hover:bg-sweet-600 text-white py-1.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5">
-                    <i data-lucide="plus-circle" class="w-4 h-4"></i> Adicionar Item na Receita
+                    class="w-full h-12 bg-sweet-500 hover:bg-sweet-600 text-white rounded-xl text-base font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-95">
+                    <i data-lucide="plus-circle" class="w-5 h-5"></i> Adicionar Item na Receita
                   </button>
 
                   <!-- Lista de itens do produto -->
-                  <div class="max-h-40 overflow-y-auto space-y-1.5 pr-1 custom-scroll" id="product-items-list-container">
+                  <div class="max-h-48 overflow-y-auto space-y-1.5 pr-1 custom-scroll" id="product-items-list-container">
                     <p class="text-[11px] text-sweet-600 italic text-center py-2">Nenhum item adicionado.</p>
                   </div>
 
@@ -363,13 +383,13 @@
     updateItemSelector() {
       const typeSelect = document.getElementById('product-add-item-type');
       const itemSelect = document.getElementById('product-add-item-id');
-      const unitBadge = document.getElementById('product-add-unit-badge');
+      const qtySection = document.getElementById('product-qty-section');
 
-      if (!typeSelect || !itemSelect || !unitBadge) return;
+      if (!typeSelect || !itemSelect || !qtySection) return;
 
       const type = typeSelect.value;
       itemSelect.innerHTML = '';
-      unitBadge.textContent = '';
+      qtySection.innerHTML = '';
 
       if (type === 'base') {
         basesList.forEach(b => {
@@ -383,6 +403,8 @@
           const option = document.createElement('option');
           option.value = i.id;
           let useUnit = i.unit === 'kg' ? 'g' : i.unit === 'L' ? 'ml' : i.unit;
+          if (i.unit === 'duzia') useUnit = 'un';
+          else if (i.unit === 'caixa_lata') useUnit = i.baseUnit || 'g';
           option.textContent = `${i.name} (${window.app.formatCurrency(i.pricePerUnit)}/${useUnit})`;
           itemSelect.appendChild(option);
         });
@@ -391,38 +413,151 @@
           const option = document.createElement('option');
           option.value = i.id;
           let useUnit = i.unit === 'kg' ? 'g' : i.unit === 'L' ? 'ml' : i.unit;
+          if (i.unit === 'duzia') useUnit = 'un';
+          else if (i.unit === 'caixa_lata') useUnit = i.baseUnit || 'g';
           option.textContent = `${i.name} (${window.app.formatCurrency(i.pricePerUnit)}/${useUnit})`;
           itemSelect.appendChild(option);
         });
       }
 
-      const updateUnitLabel = () => {
+      // Handler para montar os inputs na área de quantidade reativamente
+      const updateQtyFields = () => {
         const selectedId = itemSelect.value;
+        qtySection.innerHTML = '';
+
+        if (!selectedId) return;
+
         if (type === 'base') {
           const base = basesList.find(b => b.id === selectedId);
-          unitBadge.textContent = base ? base.yieldUnit : '';
-        } else {
-          const ing = ingredientsList.find(i => i.id === selectedId);
-          if (ing) {
-            let usageUnit = ing.unit === 'kg' ? 'g' : ing.unit === 'L' ? 'ml' : ing.unit;
-            if (usageUnit === 'g' || usageUnit === 'ml') {
-              unitBadge.innerHTML = `
-                <select id="product-add-ingredient-use-unit" class="bg-transparent font-bold text-sweet-600 focus:outline-none text-[10px] cursor-pointer">
-                  <option value="${usageUnit}">${usageUnit}</option>
-                  <option value="xicara">xícara</option>
-                </select>
-              `;
-            } else {
-              unitBadge.textContent = usageUnit;
-            }
+          if (!base) return;
+
+          const yieldType = base.yieldType || 'peso';
+          
+          let useTypeOptions = `<option value="fraction">Fração de receita</option>`;
+          if (yieldType === 'peso') {
+            useTypeOptions += `<option value="weight">Peso exato (${base.yieldUnit})</option>`;
           } else {
-            unitBadge.textContent = '';
+            useTypeOptions += `<option value="unit">Quantidade de ${base.yieldUnit}</option>`;
           }
+
+          qtySection.innerHTML = `
+            <div class="col-span-6">
+              <label class="block text-xs font-semibold text-sweet-800 mb-1">Como usar a sub-receita:</label>
+              <select id="product-add-base-use-type"
+                class="w-full h-12 px-3 py-2 border border-sweet-200 rounded-xl focus:outline-none focus:border-sweet-500 text-base font-medium bg-white">
+                ${useTypeOptions}
+              </select>
+            </div>
+            
+            <div class="col-span-6" id="div-product-base-qty-input-wrapper">
+              <!-- Dinamizado abaixo -->
+            </div>
+          `;
+
+          const useTypeSelect = document.getElementById('product-add-base-use-type');
+          const wrapper = document.getElementById('div-product-base-qty-input-wrapper');
+
+          const updateBaseQtyInput = () => {
+            const useType = useTypeSelect.value;
+            wrapper.innerHTML = '';
+
+            if (useType === 'fraction') {
+              wrapper.innerHTML = `
+                <label class="block text-xs font-semibold text-sweet-800 mb-1">Fração da receita</label>
+                <select id="product-add-base-fraction"
+                  class="w-full h-12 px-3 py-2 border border-sweet-200 rounded-xl focus:outline-none focus:border-sweet-500 text-base font-medium bg-white">
+                  <option value="1">1 receita inteira</option>
+                  <option value="0.5">Meia receita (50%)</option>
+                  <option value="0.33">1/3 de receita (33%)</option>
+                  <option value="0.25">1/4 de receita (25%)</option>
+                  <option value="1.5">1.5 receita</option>
+                  <option value="2">2 receitas</option>
+                  <option value="custom">Outra fração...</option>
+                </select>
+                <input type="number" id="product-add-item-qty-custom" step="0.01" min="0.01" placeholder="Ex: 0.75" inputmode="decimal"
+                  class="w-full h-12 px-3 py-2 border border-sweet-200 rounded-xl focus:outline-none focus:border-sweet-500 text-base font-medium mt-2 hidden">
+              `;
+              
+              const fractionSelect = document.getElementById('product-add-base-fraction');
+              const customInput = document.getElementById('product-add-item-qty-custom');
+              fractionSelect.addEventListener('change', () => {
+                if (fractionSelect.value === 'custom') {
+                  customInput.classList.remove('hidden');
+                  customInput.required = true;
+                } else {
+                  customInput.classList.add('hidden');
+                  customInput.required = false;
+                }
+              });
+            } else if (useType === 'weight') {
+              wrapper.innerHTML = `
+                <label class="block text-xs font-semibold text-sweet-800 mb-1">Peso a usar (em ${base.yieldUnit})</label>
+                <input type="number" id="product-add-item-qty" step="0.01" min="0.01" placeholder="Ex: 350" required inputmode="decimal"
+                  class="w-full h-12 px-3 py-2 border border-sweet-200 rounded-xl focus:outline-none focus:border-sweet-500 text-base font-medium">
+              `;
+            } else if (useType === 'unit') {
+              wrapper.innerHTML = `
+                <label class="block text-xs font-semibold text-sweet-800 mb-1">Qtd. de ${base.yieldUnit}</label>
+                <input type="number" id="product-add-item-qty" step="0.1" min="0.1" placeholder="Ex: 1" required inputmode="decimal"
+                  class="w-full h-12 px-3 py-2 border border-sweet-200 rounded-xl focus:outline-none focus:border-sweet-500 text-base font-medium">
+              `;
+            }
+          };
+
+          useTypeSelect.addEventListener('change', updateBaseQtyInput);
+          updateBaseQtyInput();
+
+        } else {
+          // É ingrediente ou embalagem
+          const ing = ingredientsList.find(i => i.id === selectedId);
+          if (!ing) return;
+
+          let usageUnit = ing.unit;
+          if (ing.unit === 'kg') usageUnit = 'g';
+          if (ing.unit === 'L') usageUnit = 'ml';
+          if (ing.unit === 'duzia') usageUnit = 'un';
+          if (ing.unit === 'caixa_lata') usageUnit = ing.baseUnit || 'g';
+
+          let selectHTML = '';
+          if (usageUnit === 'g' || usageUnit === 'ml') {
+            selectHTML = `
+              <select id="product-add-ingredient-use-unit"
+                class="w-full h-12 px-3 py-2 border border-sweet-200 rounded-xl focus:outline-none focus:border-sweet-500 text-base font-medium bg-white">
+                <option value="${usageUnit}">${usageUnit}</option>
+                <option value="xicara">xícara</option>
+                <option value="xicara_meia">1/2 xic.</option>
+                <option value="xicara_terco">1/3 xic.</option>
+                <option value="xicara_quarto">1/4 xic.</option>
+                <option value="colher_sopa">colh. sopa</option>
+                <option value="colher_sobremesa">colh. sobr.</option>
+                <option value="colher_cha">colh. chá</option>
+              </select>
+            `;
+          } else {
+            selectHTML = `
+              <div class="h-12 border border-sweet-200 rounded-xl flex items-center justify-center bg-sweet-100 text-base font-bold text-sweet-700" id="product-add-unit-badge-static">
+                ${usageUnit}
+              </div>
+            `;
+          }
+
+          qtySection.innerHTML = `
+            <div class="col-span-8">
+              <label class="block text-xs font-semibold text-sweet-800 mb-1">Quantidade a usar</label>
+              <input type="number" id="product-add-item-qty" step="0.01" min="0.01" placeholder="Ex: 100" required inputmode="decimal"
+                class="w-full h-12 px-3 py-2 border border-sweet-200 rounded-xl focus:outline-none focus:border-sweet-500 text-base font-medium">
+            </div>
+            
+            <div class="col-span-4">
+              <label class="block text-xs font-semibold text-sweet-800 mb-1">Unidade</label>
+              ${selectHTML}
+            </div>
+          `;
         }
       };
 
-      itemSelect.addEventListener('change', updateUnitLabel);
-      updateUnitLabel();
+      itemSelect.addEventListener('change', updateQtyFields);
+      updateQtyFields();
     },
 
     /**
@@ -460,48 +595,82 @@
         btnAddItem.addEventListener('click', () => {
           const type = document.getElementById('product-add-item-type').value;
           const itemId = document.getElementById('product-add-item-id').value;
-          const qtyInput = document.getElementById('product-add-item-qty');
-          const qty = parseFloat(qtyInput.value) || 0;
-
+          
           if (!itemId) {
             window.app.showToast('Selecione um item!', 'warning');
             return;
           }
-          if (qty <= 0) {
-            window.app.showToast('Informe uma quantidade válida!', 'warning');
-            return;
-          }
 
+          let qty = 0;
+          let useUnit = '';
+          let qtyConverted = 0;
+          
           let name = '';
           let costPerUnit = 0;
           let unit = '';
-          let cupWeight = 0;
-
+          
           if (type === 'base') {
             const base = basesList.find(b => b.id === itemId);
-            if (base) {
-              name = base.name;
-              costPerUnit = base.costPerUnit;
-              unit = base.yieldUnit;
+            if (!base) return;
+
+            name = base.name;
+            costPerUnit = base.costPerUnit;
+            unit = base.yieldUnit;
+
+            const useType = document.getElementById('product-add-base-use-type').value;
+            if (useType === 'fraction') {
+              const fracSelect = document.getElementById('product-add-base-fraction');
+              let val = fracSelect.value;
+              if (val === 'custom') {
+                val = parseFloat(document.getElementById('product-add-item-qty-custom').value) || 0;
+              } else {
+                val = parseFloat(val);
+              }
+
+              if (val <= 0) {
+                window.app.showToast('Fração inválida!', 'warning');
+                return;
+              }
+
+              qty = val;
+              useUnit = 'receita';
+              qtyConverted = val * base.yieldAmount;
+            } else {
+              const qtyInput = document.getElementById('product-add-item-qty');
+              const val = parseFloat(qtyInput ? qtyInput.value : 0) || 0;
+              if (val <= 0) {
+                window.app.showToast('Informe uma quantidade válida!', 'warning');
+                return;
+              }
+              qty = val;
+              useUnit = base.yieldUnit;
+              qtyConverted = val;
             }
           } else {
-            const ing = ingredientsList.find(i => i.id === itemId);
-            if (ing) {
-              name = ing.name;
-              costPerUnit = ing.pricePerUnit;
-              unit = ing.unit === 'kg' ? 'g' : ing.unit === 'L' ? 'ml' : ing.unit;
-              cupWeight = ing.cupWeight || 0;
+            // Ingrediente ou embalagem
+            const qtyInput = document.getElementById('product-add-item-qty');
+            const val = parseFloat(qtyInput ? qtyInput.value : 0) || 0;
+            if (val <= 0) {
+              window.app.showToast('Informe uma quantidade válida!', 'warning');
+              return;
             }
-          }
+            
+            const ing = ingredientsList.find(i => i.id === itemId);
+            if (!ing) return;
 
-          const useUnitSelect = document.getElementById('product-add-ingredient-use-unit');
-          const useUnit = useUnitSelect ? useUnitSelect.value : unit;
-          
-          let useCupWeight = cupWeight;
-          if (useUnit === 'xicara') {
-            useCupWeight = getIngredientCupWeight(ing);
+            name = ing.name;
+            costPerUnit = ing.pricePerUnit;
+            unit = ing.unit === 'kg' ? 'g' : ing.unit === 'L' ? 'ml' : ing.unit;
+            if (ing.unit === 'duzia') unit = 'un';
+            else if (ing.unit === 'caixa_lata') unit = ing.baseUnit || 'g';
+
+            const useUnitSelect = document.getElementById('product-add-ingredient-use-unit');
+            useUnit = useUnitSelect ? useUnitSelect.value : unit;
+
+            const multiplier = convertCaseiraToGramature(ing, useUnit);
+            qty = val;
+            qtyConverted = val * multiplier;
           }
-          const qtyConverted = useUnit === 'xicara' ? qty * useCupWeight : qty;
 
           const existing = currentProductItems.find(item => item.itemId === itemId && item.type === type && item.originalUnit === useUnit);
           if (existing) {
@@ -520,9 +689,12 @@
             });
           }
 
-          qtyInput.value = '';
           window.products.updateProductItemsUI();
           window.products.recalculatePricing();
+          
+          // Re-trigar evento change para limpar/restaurar campos de quantidade
+          const eventChange = new Event('change');
+          document.getElementById('product-add-item-id').dispatchEvent(eventChange);
         });
       }
 
@@ -732,19 +904,45 @@
         else if (item.type === 'package') typeBadge = '<span class="px-1.5 py-0.5 rounded text-[8px] font-bold bg-purple-50 text-purple-600 mr-1.5">Emb</span>';
         else typeBadge = '<span class="px-1.5 py-0.5 rounded text-[8px] font-bold bg-blue-50 text-blue-600 mr-1.5">Insumo</span>';
 
-        const qtyDisplay = item.originalUnit === 'xicara' ? `${item.originalQty} xícara(s) (~${item.quantity.toFixed(0)}${item.unit})` : `${item.quantity}${item.unit}`;
+        let unitLabel = '';
+        if (item.type === 'base') {
+          unitLabel = item.originalUnit === 'receita' ? 'receita' : item.originalUnit;
+        } else {
+          switch (item.originalUnit) {
+            case 'xicara': unitLabel = 'xic.'; break;
+            case 'xicara_meia': unitLabel = '1/2 xic.'; break;
+            case 'xicara_terco': unitLabel = '1/3 xic.'; break;
+            case 'xicara_quarto': unitLabel = '1/4 xic.'; break;
+            case 'colher_sopa': unitLabel = 'colh. sopa'; break;
+            case 'colher_sobremesa': unitLabel = 'colh. sobr.'; break;
+            case 'colher_cha': unitLabel = 'colh. chá'; break;
+            default: unitLabel = item.unit;
+          }
+        }
+
+        const isCaseira = ['xicara', 'xicara_meia', 'xicara_terco', 'xicara_quarto', 'colher_sopa', 'colher_sobremesa', 'colher_cha'].includes(item.originalUnit);
+        const isReceitaFraction = item.originalUnit === 'receita';
+        
+        let qtyDisplay = '';
+        if (isReceitaFraction) {
+          qtyDisplay = `${item.originalQty} rec. (~${item.quantity.toFixed(0)}${item.unit})`;
+        } else if (isCaseira) {
+          qtyDisplay = `${item.originalQty} ${unitLabel} (~${item.quantity.toFixed(1)}${item.unit})`;
+        } else {
+          qtyDisplay = `${item.originalQty || item.quantity}${unitLabel}`;
+        }
 
         return `
-          <div class="flex items-center justify-between bg-white px-2.5 py-1.5 rounded-lg border border-sweet-200/50 text-[11px] font-medium">
+          <div class="flex items-center justify-between bg-white px-2.5 py-1.5 rounded-lg border border-sweet-200/50 text-[11px] font-medium animate-slide-in">
             <div class="flex-1 min-w-0 pr-2">
-              <span class="block text-sweet-900 truncate font-semibold">${typeBadge}${item.name}</span>
-              <span class="text-sweet-600">${qtyDisplay} &times; ${window.app.formatCurrency(item.costPerUnit)}</span>
+              <span class="block text-sweet-900 truncate font-semibold text-xs">${typeBadge}${item.name}</span>
+              <span class="text-sweet-600 text-[10px]">${qtyDisplay} &times; ${window.app.formatCurrency(item.costPerUnit)}</span>
             </div>
             <div class="flex items-center gap-2">
               <span class="font-bold text-sweet-900">${window.app.formatCurrency(cost)}</span>
               <button type="button" onclick="window.appActions.removeProductItem('${item.itemId}', '${item.type}')"
-                class="w-5 h-5 text-rose-500 hover:bg-rose-50 rounded-full flex items-center justify-center transition-colors">
-                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                class="w-10 h-10 text-rose-500 hover:bg-rose-50 rounded-full flex items-center justify-center transition-colors active:scale-90">
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
               </button>
             </div>
           </div>
@@ -1007,14 +1205,44 @@
                 </tr>
               </thead>
               <tbody>
-                ${itemsList.map(item => `
-                  <tr class="border-b border-sweet-100">
-                    <td class="py-2 font-medium">${item.name}</td>
-                    <td class="py-2 text-center">${item.originalUnit === 'xicara' ? `${item.originalQty} xic. (~${item.quantity.toFixed(0)}${item.unit})` : `${item.quantity}${item.unit}`}</td>
-                    <td class="py-2 text-right">${window.app.formatCurrency(item.costPerUnit)}</td>
-                    <td class="py-2 text-right font-bold">${window.app.formatCurrency(item.quantity * item.costPerUnit)}</td>
-                  </tr>
-                `).join('')}
+                ${itemsList.map(item => {
+                  let unitLabel = '';
+                  if (item.type === 'base') {
+                    unitLabel = item.originalUnit === 'receita' ? 'receita' : item.originalUnit;
+                  } else {
+                    switch (item.originalUnit) {
+                      case 'xicara': unitLabel = 'xic.'; break;
+                      case 'xicara_meia': unitLabel = '1/2 xic.'; break;
+                      case 'xicara_terco': unitLabel = '1/3 xic.'; break;
+                      case 'xicara_quarto': unitLabel = '1/4 xic.'; break;
+                      case 'colher_sopa': unitLabel = 'colh. sopa'; break;
+                      case 'colher_sobremesa': unitLabel = 'colh. sobr.'; break;
+                      case 'colher_cha': unitLabel = 'colh. chá'; break;
+                      default: unitLabel = item.unit;
+                    }
+                  }
+
+                  const isCaseira = ['xicara', 'xicara_meia', 'xicara_terco', 'xicara_quarto', 'colher_sopa', 'colher_sobremesa', 'colher_cha'].includes(item.originalUnit);
+                  const isReceitaFraction = item.originalUnit === 'receita';
+                  
+                  let qtyDisplay = '';
+                  if (isReceitaFraction) {
+                    qtyDisplay = `${item.originalQty} rec. (~${item.quantity.toFixed(0)}${item.unit})`;
+                  } else if (isCaseira) {
+                    qtyDisplay = `${item.originalQty} ${unitLabel} (~${item.quantity.toFixed(1)}${item.unit})`;
+                  } else {
+                    qtyDisplay = `${item.originalQty || item.quantity}${unitLabel}`;
+                  }
+
+                  return `
+                    <tr class="border-b border-sweet-100">
+                      <td class="py-2 font-medium">${item.name}</td>
+                      <td class="py-2 text-center">${qtyDisplay}</td>
+                      <td class="py-2 text-right">${window.app.formatCurrency(item.costPerUnit)}</td>
+                      <td class="py-2 text-right font-bold">${window.app.formatCurrency(item.quantity * item.costPerUnit)}</td>
+                    </tr>
+                  `;
+                }).join('')}
               </tbody>
             </table>
           </div>

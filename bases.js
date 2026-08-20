@@ -10,28 +10,53 @@
   // Variável para acumular itens na criação/edição da base corrente
   let currentBaseIngredients = [];
 
-  // Função auxiliar inteligente para estimar o peso/volume de 1 xícara
-  const getIngredientCupWeight = (ing) => {
-    if (ing.cupWeight > 0) return ing.cupWeight;
-    const unit = ing.unit;
-    const name = (ing.name || '').toLowerCase();
+  // Função auxiliar de conversão para todas as medidas caseiras com sugestões inteligentes
+  const convertCaseiraToGramature = (ing, measureType) => {
+    // Obter peso base da xícara
+    let cup = ing.cupWeight > 0 ? ing.cupWeight : 150;
+    if (!(ing.cupWeight > 0)) {
+      const name = (ing.name || '').toLowerCase();
+      const unit = ing.unit;
+      if (unit === 'L' || unit === 'ml') {
+        cup = 240;
+      } else if (name.includes('farinha') || name.includes('trigo') || name.includes('amido') || name.includes('polvilho')) {
+        cup = 120;
+      } else if (name.includes('açúcar') || name.includes('acucar') || name.includes('adoçante') || name.includes('cristal') || name.includes('refinado')) {
+        cup = 180;
+      } else if (name.includes('cacau') || name.includes('chocolate') || name.includes('cacau em pó') || name.includes('chocolate em pó')) {
+        cup = 90;
+      } else if (name.includes('manteiga') || name.includes('margarina')) {
+        cup = 200;
+      }
+    }
+
+    // Obter peso da colher de sopa
+    let sopa = ing.spoonSopaWeight > 0 ? ing.spoonSopaWeight : Math.round(cup / 12);
+    if (!(ing.spoonSopaWeight > 0)) {
+      if (cup === 240) sopa = 15;
+      else if (cup === 120) sopa = 10;
+      else if (cup === 180) sopa = 12;
+      else if (cup === 90) sopa = 6;
+      else if (cup === 200) sopa = 12;
+    }
+
+    // Obter colher de sobremesa
+    let sobremesa = ing.spoonSobremesaWeight > 0 ? ing.spoonSobremesaWeight : Math.round(sopa * (2/3));
     
-    if (unit === 'L' || unit === 'ml') {
-      return 240; // 1 xícara de líquidos = 240ml
+    // Obter colher de chá
+    let cha = ing.spoonChaWeight > 0 ? ing.spoonChaWeight : Math.round(sopa / 3);
+
+    // Calcular com base na medida selecionada
+    switch (measureType) {
+      case 'xicara': return cup;
+      case 'xicara_meia': return cup * 0.5;
+      case 'xicara_terco': return cup * 0.3333;
+      case 'xicara_quarto': return cup * 0.25;
+      case 'colher_sopa': return sopa;
+      case 'colher_sobremesa': return sobremesa;
+      case 'colher_cha': return cha;
+      default: return 1;
     }
-    if (name.includes('farinha') || name.includes('trigo')) {
-      return 120; // 1 xícara de farinha = 120g
-    }
-    if (name.includes('açúcar') || name.includes('acucar') || name.includes('adoçante')) {
-      return 200; // 1 xícara de açúcar = 200g
-    }
-    if (name.includes('cacau') || name.includes('chocolate')) {
-      return 90; // 1 xícara de cacau = 90g
-    }
-    if (name.includes('manteiga') || name.includes('margarina')) {
-      return 200; // 1 xícara de manteiga = 200g
-    }
-    return 150; // Média padrão para secos
   };
 
   window.bases = {
@@ -90,47 +115,48 @@
         </div>
 
         <!-- MODAL DE CADASTRO/EDIÇÃO DE BASE -->
-        <div id="modal-base" class="fixed inset-0 z-50 hidden flex items-end sm:items-center justify-center p-4 bg-sweet-900/60 backdrop-blur-sm">
-          <div class="w-full max-w-md bg-white rounded-t-3xl sm:rounded-2xl p-6 shadow-xl border border-sweet-200 page-fade-in max-h-[92vh] overflow-y-auto custom-scroll">
-            <div class="flex items-center justify-between pb-3 border-b border-sweet-100">
+        <div id="modal-base" class="fixed inset-0 z-50 hidden flex items-end sm:items-center justify-center p-0 sm:p-4 bg-sweet-900/60 backdrop-blur-sm">
+          <div class="w-full h-full sm:h-auto sm:max-h-[92vh] sm:max-w-md bg-white rounded-t-3xl sm:rounded-2xl p-6 shadow-xl border border-sweet-200 flex flex-col page-fade-in overflow-hidden">
+            
+            <div class="flex items-center justify-between pb-3 border-b border-sweet-100 flex-shrink-0">
               <h3 class="text-base font-bold flex items-center gap-1.5" id="base-modal-title">
                 <i data-lucide="egg" class="w-5 h-5 text-sweet-500"></i> Criar Base / Sub-receita
               </h3>
-              <button id="close-base-modal" class="text-sweet-600 hover:text-sweet-900">
-                <i data-lucide="x" class="w-5 h-5"></i>
+              <button id="close-base-modal" class="text-sweet-600 hover:text-sweet-900 p-1.5">
+                <i data-lucide="x" class="w-6 h-6"></i>
               </button>
             </div>
             
-            <form id="form-base" class="space-y-4 pt-4">
+            <form id="form-base" class="flex-1 overflow-y-auto custom-scroll py-4 space-y-4 pr-1">
               <input type="hidden" id="base-id">
               
               <!-- Nome da Base -->
               <div>
                 <label class="block text-xs font-semibold text-sweet-800 mb-1" for="base-name">Nome da Sub-receita</label>
                 <input type="text" id="base-name" required placeholder="Ex: Brigadeiro Tradicional, Massa Pão de Ló"
-                  class="w-full px-3 py-2 border border-sweet-200 rounded-xl focus:outline-none focus:border-sweet-500 text-sm font-medium">
+                  class="w-full h-12 px-3 py-2 border border-sweet-200 rounded-xl focus:outline-none focus:border-sweet-500 text-base font-medium">
               </div>
 
               <!-- Adicionar Ingrediente à Lista -->
-              <div class="p-3 bg-sweet-100/50 rounded-2xl border border-sweet-200">
-                <span class="block text-xs font-bold text-sweet-900 mb-2">Ingredientes da Sub-receita</span>
+              <div class="p-3 bg-sweet-100/50 rounded-2xl border border-sweet-200 space-y-3">
+                <span class="block text-xs font-bold text-sweet-900">Ingredientes da Sub-receita</span>
                 
-                <div class="grid grid-cols-12 gap-2 mb-2.5">
+                <div class="grid grid-cols-12 gap-2">
                   <div class="col-span-6">
                     <select id="base-add-ingredient-id"
-                      class="w-full px-2.5 py-1.5 border border-sweet-200 rounded-xl focus:outline-none focus:border-sweet-500 text-xs font-medium bg-white">
+                      class="w-full h-12 px-2.5 py-1.5 border border-sweet-200 rounded-xl focus:outline-none focus:border-sweet-500 text-base font-medium bg-white">
                       <option value="">Selecione...</option>
                       ${ingredientsList.map(i => `<option value="${i.id}">${i.name} (${window.app.formatCurrency(i.pricePerUnit)}/${i.unit === 'kg' || i.unit === 'g' ? 'g' : i.unit === 'L' || i.unit === 'ml' ? 'ml' : 'un'})</option>`).join('')}
                     </select>
                   </div>
                   <div class="col-span-4 relative">
-                    <input type="number" id="base-add-ingredient-qty" step="0.01" min="0.01" placeholder="Qtd"
-                      class="w-full px-2.5 py-1.5 border border-sweet-200 rounded-xl focus:outline-none focus:border-sweet-500 text-xs font-medium">
-                    <span class="absolute right-2 top-2 text-[10px] text-sweet-600" id="base-add-unit-badge"></span>
+                    <input type="number" id="base-add-ingredient-qty" step="0.01" min="0.01" placeholder="Qtd" inputmode="decimal"
+                      class="w-full h-12 pl-2 pr-12 py-1.5 border border-sweet-200 rounded-xl focus:outline-none focus:border-sweet-500 text-base font-medium">
+                    <span class="absolute right-2 top-3.5 text-[10px] text-sweet-600" id="base-add-unit-badge"></span>
                   </div>
                   <div class="col-span-2">
-                    <button type="button" id="btn-base-add-ingredient-item" class="w-full h-full bg-sweet-500 hover:bg-sweet-600 text-white rounded-xl flex items-center justify-center transition-colors">
-                      <i data-lucide="plus" class="w-4 h-4"></i>
+                    <button type="button" id="btn-base-add-ingredient-item" class="w-full h-12 bg-sweet-500 hover:bg-sweet-600 text-white rounded-xl flex items-center justify-center transition-colors">
+                      <i data-lucide="plus" class="w-5 h-5"></i>
                     </button>
                   </div>
                 </div>
@@ -141,23 +167,61 @@
                 </div>
               </div>
 
-              <!-- Rendimento e Unidade de Rendimento -->
-              <div class="grid grid-cols-2 gap-3">
+              <!-- Rendimento Especial -->
+              <div class="p-3.5 bg-sweet-100/30 rounded-2xl border border-sweet-200 space-y-3">
+                <span class="block text-xs font-bold text-sweet-900">Rendimento da Receita Base</span>
+                
                 <div>
-                  <label class="block text-xs font-semibold text-sweet-800 mb-1" for="base-yieldAmount">Rendimento Total</label>
-                  <input type="number" id="base-yieldAmount" step="0.01" min="0.01" required placeholder="Ex: 800 ou 1"
-                    class="w-full px-3 py-2 border border-sweet-200 rounded-xl focus:outline-none focus:border-sweet-500 text-sm font-medium">
-                </div>
-                <div>
-                  <label class="block text-xs font-semibold text-sweet-800 mb-1" for="base-yieldUnit">Unidade de Rendimento</label>
-                  <select id="base-yieldUnit" required
-                    class="w-full px-3 py-2 border border-sweet-200 rounded-xl focus:outline-none focus:border-sweet-500 text-sm font-medium bg-white">
-                    <option value="g">Grama (g)</option>
-                    <option value="ml">Mililitro (ml)</option>
-                    <option value="un">Unidade (un)</option>
-                    <option value="porções">Porções</option>
-                    <option value="docinhos">Docinhos</option>
+                  <label class="block text-xs font-semibold text-sweet-800 mb-1" for="base-yieldType">Definir Rendimento por:</label>
+                  <select id="base-yieldType" required
+                    class="w-full h-12 px-3 py-2 border border-sweet-200 rounded-xl focus:outline-none focus:border-sweet-500 text-base font-medium bg-white">
+                    <option value="peso">Peso / Volume Total (g ou ml)</option>
+                    <option value="forma">Formas / Tamanho de Aro</option>
+                    <option value="unidade">Unidades / Porções</option>
                   </select>
+                </div>
+
+                <!-- Campos dinâmicos do rendimento -->
+                <div id="yield-fields-peso" class="grid grid-cols-2 gap-3">
+                  <div>
+                    <label class="block text-xs font-semibold text-sweet-800 mb-1" for="base-yieldAmount-peso">Peso/Volume Total</label>
+                    <input type="number" id="base-yieldAmount-peso" step="0.01" min="0.01" placeholder="Ex: 1200" inputmode="decimal"
+                      class="w-full h-12 px-3 py-2 border border-sweet-200 rounded-xl focus:outline-none focus:border-sweet-500 text-base font-medium">
+                  </div>
+                  <div>
+                    <label class="block text-xs font-semibold text-sweet-800 mb-1" for="base-yieldUnit-peso">Unidade</label>
+                    <select id="base-yieldUnit-peso"
+                      class="w-full h-12 px-3 py-2 border border-sweet-200 rounded-xl focus:outline-none focus:border-sweet-500 text-base font-medium bg-white">
+                      <option value="g">Grama (g)</option>
+                      <option value="ml">Mililitro (ml)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div id="yield-fields-forma" class="grid grid-cols-2 gap-3 hidden">
+                  <div>
+                    <label class="block text-xs font-semibold text-sweet-800 mb-1" for="base-yieldPanQty">Qtd. de Formas</label>
+                    <input type="number" id="base-yieldPanQty" step="1" min="1" placeholder="Ex: 2" inputmode="numeric"
+                      class="w-full h-12 px-3 py-2 border border-sweet-200 rounded-xl focus:outline-none focus:border-sweet-500 text-base font-medium">
+                  </div>
+                  <div>
+                    <label class="block text-xs font-semibold text-sweet-800 mb-1" for="base-yieldPanSize">Tamanho / Aro</label>
+                    <input type="text" id="base-yieldPanSize" placeholder="Ex: Aro 15"
+                      class="w-full h-12 px-3 py-2 border border-sweet-200 rounded-xl focus:outline-none focus:border-sweet-500 text-base font-medium">
+                  </div>
+                </div>
+
+                <div id="yield-fields-unidade" class="grid grid-cols-2 gap-3 hidden">
+                  <div>
+                    <label class="block text-xs font-semibold text-sweet-800 mb-1" for="base-yieldAmount-unidade">Qtd. Unidades</label>
+                    <input type="number" id="base-yieldAmount-unidade" step="1" min="1" placeholder="Ex: 50" inputmode="numeric"
+                      class="w-full h-12 px-3 py-2 border border-sweet-200 rounded-xl focus:outline-none focus:border-sweet-500 text-base font-medium">
+                  </div>
+                  <div>
+                    <label class="block text-xs font-semibold text-sweet-800 mb-1" for="base-yieldUnit-unidade">Tipo de Porção</label>
+                    <input type="text" id="base-yieldUnit-unidade" placeholder="Ex: brigadeiros de 20g"
+                      class="w-full h-12 px-3 py-2 border border-sweet-200 rounded-xl focus:outline-none focus:border-sweet-500 text-base font-medium">
+                  </div>
                 </div>
               </div>
 
@@ -173,11 +237,11 @@
                 </div>
               </div>
 
-              <div class="pt-2 flex gap-2">
-                <button type="button" id="btn-delete-base-modal" class="hidden flex-1 bg-rose-50 text-rose-600 border border-rose-200 py-2.5 rounded-xl font-bold hover:bg-rose-100 transition-colors text-xs flex items-center justify-center gap-1.5">
+              <div class="pt-2 flex gap-2 flex-shrink-0">
+                <button type="button" id="btn-delete-base-modal" class="hidden h-12 bg-rose-50 text-rose-600 border border-rose-200 px-4 rounded-xl font-bold hover:bg-rose-100 transition-colors text-base flex items-center justify-center gap-1.5 flex-1">
                   <i data-lucide="trash-2" class="w-4 h-4"></i> Excluir
                 </button>
-                <button type="submit" class="flex-[2] bg-sweet-500 text-white py-2.5 rounded-xl font-bold hover:bg-sweet-600 transition-colors shadow-sm text-xs flex items-center justify-center gap-1.5">
+                <button type="submit" class="h-12 bg-sweet-500 text-white py-2.5 rounded-xl font-bold hover:bg-sweet-600 transition-colors shadow-sm text-base flex items-center justify-center gap-1.5 flex-[2]">
                   <i data-lucide="check" class="w-4 h-4"></i> Salvar Base
                 </button>
               </div>
@@ -259,6 +323,45 @@
       const btnClose = document.getElementById('close-base-modal');
       if (btnClose) btnClose.addEventListener('click', () => window.bases.closeModal());
 
+      // Toggle dinâmico do tipo de rendimento
+      const yieldTypeSelect = document.getElementById('base-yieldType');
+      if (yieldTypeSelect) {
+        const toggleYieldFields = () => {
+          const type = yieldTypeSelect.value;
+          document.getElementById('yield-fields-peso').classList.add('hidden');
+          document.getElementById('yield-fields-forma').classList.add('hidden');
+          document.getElementById('yield-fields-unidade').classList.add('hidden');
+          
+          const inputPeso = document.getElementById('base-yieldAmount-peso');
+          const inputFormaQty = document.getElementById('base-yieldPanQty');
+          const inputFormaSize = document.getElementById('base-yieldPanSize');
+          const inputUnidadeQty = document.getElementById('base-yieldAmount-unidade');
+          const inputUnidadeUnit = document.getElementById('base-yieldUnit-unidade');
+          
+          if (inputPeso) inputPeso.required = false;
+          if (inputFormaQty) inputFormaQty.required = false;
+          if (inputFormaSize) inputFormaSize.required = false;
+          if (inputUnidadeQty) inputUnidadeQty.required = false;
+          if (inputUnidadeUnit) inputUnidadeUnit.required = false;
+          
+          if (type === 'peso') {
+            document.getElementById('yield-fields-peso').classList.remove('hidden');
+            if (inputPeso) inputPeso.required = true;
+          } else if (type === 'forma') {
+            document.getElementById('yield-fields-forma').classList.remove('hidden');
+            if (inputFormaQty) inputFormaQty.required = true;
+            if (inputFormaSize) inputFormaSize.required = true;
+          } else if (type === 'unidade') {
+            document.getElementById('yield-fields-unidade').classList.remove('hidden');
+            if (inputUnidadeQty) inputUnidadeQty.required = true;
+            if (inputUnidadeUnit) inputUnidadeUnit.required = true;
+          }
+          
+          window.bases.calculateBasesCostPreview();
+        };
+        yieldTypeSelect.addEventListener('change', toggleYieldFields);
+      }
+
       // Seletor de ingrediente dinâmico no modal
       const addIngSelect = document.getElementById('base-add-ingredient-id');
       const unitBadge = document.getElementById('base-add-unit-badge');
@@ -274,9 +377,15 @@
             
             if (usageUnit === 'g' || usageUnit === 'ml') {
               unitBadge.innerHTML = `
-                <select id="base-add-ingredient-use-unit" class="bg-transparent font-bold text-sweet-600 focus:outline-none text-[10px] cursor-pointer">
+                <select id="base-add-ingredient-use-unit" class="bg-transparent font-bold text-sweet-600 focus:outline-none text-[10px] cursor-pointer max-w-[80px]">
                   <option value="${usageUnit}">${usageUnit}</option>
                   <option value="xicara">xícara</option>
+                  <option value="xicara_meia">1/2 xic.</option>
+                  <option value="xicara_terco">1/3 xic.</option>
+                  <option value="xicara_quarto">1/4 xic.</option>
+                  <option value="colher_sopa">colh. sopa</option>
+                  <option value="colher_sobremesa">colh. sobr.</option>
+                  <option value="colher_cha">colh. chá</option>
                 </select>
               `;
             } else {
@@ -310,10 +419,8 @@
             const useUnitSelect = document.getElementById('base-add-ingredient-use-unit');
             const useUnit = useUnitSelect ? useUnitSelect.value : (ing.unit === 'kg' ? 'g' : ing.unit === 'L' ? 'ml' : ing.unit);
             
-            const cupWeight = getIngredientCupWeight(ing);
-            const qtyConverted = useUnit === 'xicara' ? qty * cupWeight : qty;
+            const qtyConverted = convertCaseiraToGramature(ing, useUnit) * qty;
 
-            // Verificar se já existe com a mesma unidade, se sim soma
             const existing = currentBaseIngredients.find(item => item.ingredientId === ingId && item.originalUnit === useUnit);
             if (existing) {
               existing.quantity += qtyConverted;
@@ -341,15 +448,15 @@
         });
       }
 
-      // Atualização de rendimento
-      const yieldInput = document.getElementById('base-yieldAmount');
-      if (yieldInput) {
-        yieldInput.addEventListener('input', () => window.bases.calculateBasesCostPreview());
-      }
-      const yieldUnitSelect = document.getElementById('base-yieldUnit');
-      if (yieldUnitSelect) {
-        yieldUnitSelect.addEventListener('change', () => window.bases.calculateBasesCostPreview());
-      }
+      // Atualização de rendimento ao digitar em qualquer campo
+      const inputsToPreview = ['base-yieldAmount-peso', 'base-yieldPanQty', 'base-yieldPanSize', 'base-yieldAmount-unidade', 'base-yieldUnit-unidade', 'base-yieldUnit-peso'];
+      inputsToPreview.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.addEventListener('input', () => window.bases.calculateBasesCostPreview());
+          el.addEventListener('change', () => window.bases.calculateBasesCostPreview());
+        }
+      });
 
       // Submissão do formulário
       const form = document.getElementById('form-base');
@@ -397,7 +504,6 @@
       document.getElementById('base-id').value = '';
       currentBaseIngredients = [];
       window.bases.updateIngredientsListUI();
-      window.bases.calculateBasesCostPreview();
 
       // Re-injetar lista de ingredientes atualizada no dropdown
       const selectAdd = document.getElementById('base-add-ingredient-id');
@@ -414,8 +520,20 @@
           title.innerHTML = `<i data-lucide="edit" class="w-5 h-5 text-sweet-500"></i> Editar Base`;
           document.getElementById('base-id').value = item.id;
           document.getElementById('base-name').value = item.name;
-          document.getElementById('base-yieldAmount').value = item.yieldAmount;
-          document.getElementById('base-yieldUnit').value = item.yieldUnit;
+          
+          const yType = item.yieldType || 'peso';
+          document.getElementById('base-yieldType').value = yType;
+          
+          if (yType === 'peso') {
+            document.getElementById('base-yieldAmount-peso').value = item.yieldAmount;
+            document.getElementById('base-yieldUnit-peso').value = item.yieldUnit || 'g';
+          } else if (yType === 'forma') {
+            document.getElementById('base-yieldPanQty').value = item.yieldPanQty || 1;
+            document.getElementById('base-yieldPanSize').value = item.yieldPanSize || 'Aro 15';
+          } else if (yType === 'unidade') {
+            document.getElementById('base-yieldAmount-unidade').value = item.yieldAmount;
+            document.getElementById('base-yieldUnit-unidade').value = item.yieldUnit || 'porções';
+          }
 
           // Mapear os ingredientes cadastrados para ter o nome atualizado e custo atual
           const ingredientsMap = new Map(ingredientsList.map(ing => [ing.id, ing]));
@@ -436,12 +554,23 @@
 
           btnDelete.classList.remove('hidden');
           window.bases.updateIngredientsListUI();
-          window.bases.calculateBasesCostPreview();
         }
       } else {
         title.innerHTML = `<i data-lucide="egg" class="w-5 h-5 text-sweet-500"></i> Criar Base / Sub-receita`;
         btnDelete.classList.add('hidden');
+        
+        document.getElementById('base-yieldAmount-peso').value = '';
+        document.getElementById('base-yieldPanQty').value = '';
+        document.getElementById('base-yieldPanSize').value = '';
+        document.getElementById('base-yieldAmount-unidade').value = '';
+        document.getElementById('base-yieldUnit-unidade').value = '';
       }
+
+      // Trigar mudança no select do tipo de rendimento para atualizar visibilidade dos campos
+      const eventChange = new Event('change');
+      document.getElementById('base-yieldType').dispatchEvent(eventChange);
+
+      window.bases.calculateBasesCostPreview();
 
       modal.classList.remove('hidden');
       if (window.lucide) window.lucide.createIcons();
@@ -468,18 +597,33 @@
 
       listContainer.innerHTML = currentBaseIngredients.map(item => {
         const cost = item.quantity * item.pricePerUnit;
-        const qtyDisplay = item.originalUnit === 'xicara' ? `${item.originalQty} xícara(s) (~${item.quantity.toFixed(0)}${item.unit})` : `${item.quantity}${item.unit}`;
+        
+        let unitLabel = '';
+        switch (item.originalUnit) {
+          case 'xicara': unitLabel = 'xic.'; break;
+          case 'xicara_meia': unitLabel = '1/2 xic.'; break;
+          case 'xicara_terco': unitLabel = '1/3 xic.'; break;
+          case 'xicara_quarto': unitLabel = '1/4 xic.'; break;
+          case 'colher_sopa': unitLabel = 'colh. sopa'; break;
+          case 'colher_sobremesa': unitLabel = 'colh. sobr.'; break;
+          case 'colher_cha': unitLabel = 'colh. chá'; break;
+          default: unitLabel = item.unit;
+        }
+
+        const isCaseira = ['xicara', 'xicara_meia', 'xicara_terco', 'xicara_quarto', 'colher_sopa', 'colher_sobremesa', 'colher_cha'].includes(item.originalUnit);
+        const qtyDisplay = isCaseira ? `${item.originalQty} ${unitLabel} (~${item.quantity.toFixed(1)}${item.unit})` : `${item.originalQty || item.quantity}${unitLabel}`;
+
         return `
-          <div class="flex items-center justify-between bg-white px-2.5 py-1.5 rounded-lg border border-sweet-200/50 text-[11px] font-medium">
+          <div class="flex items-center justify-between bg-white px-2.5 py-1.5 rounded-lg border border-sweet-200/50 text-[11px] font-medium animate-slide-in">
             <div class="flex-1 min-w-0 pr-2">
-              <span class="block text-sweet-900 truncate font-semibold">${item.name}</span>
-              <span class="text-sweet-600">${qtyDisplay} &times; ${window.app.formatCurrency(item.pricePerUnit)}</span>
+              <span class="block text-sweet-900 truncate font-semibold text-xs">${item.name}</span>
+              <span class="text-sweet-600 text-[10px]">${qtyDisplay} &times; ${window.app.formatCurrency(item.pricePerUnit)}</span>
             </div>
             <div class="flex items-center gap-2">
               <span class="font-bold text-sweet-900">${window.app.formatCurrency(cost)}</span>
               <button type="button" onclick="window.appActions.removeBaseIngredient('${item.ingredientId}')"
-                class="w-5 h-5 text-rose-500 hover:bg-rose-50 rounded-full flex items-center justify-center transition-colors">
-                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                class="w-10 h-10 text-rose-500 hover:bg-rose-50 rounded-full flex items-center justify-center transition-colors active:scale-90">
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
               </button>
             </div>
           </div>
@@ -495,22 +639,37 @@
     calculateBasesCostPreview() {
       const totalCostLabel = document.getElementById('base-total-cost-preview');
       const unitCostLabel = document.getElementById('base-unit-cost-preview');
-      const yieldInput = document.getElementById('base-yieldAmount');
-      const yieldUnitSelect = document.getElementById('base-yieldUnit');
 
-      if (!totalCostLabel || !unitCostLabel || !yieldInput) return;
+      if (!totalCostLabel || !unitCostLabel) return;
 
       let totalCost = 0;
       currentBaseIngredients.forEach(item => {
         totalCost += item.quantity * item.pricePerUnit;
       });
 
-      const yieldAmount = parseFloat(yieldInput.value) || 0;
-      const yieldUnit = yieldUnitSelect ? yieldUnitSelect.value : 'g';
+      const yieldType = document.getElementById('base-yieldType') ? document.getElementById('base-yieldType').value : 'peso';
+      let yieldAmount = 1;
+      let yieldUnit = 'g';
+
+      if (yieldType === 'peso') {
+        const inputPeso = document.getElementById('base-yieldAmount-peso');
+        const selectUnitPeso = document.getElementById('base-yieldUnit-peso');
+        yieldAmount = parseFloat(inputPeso ? inputPeso.value : 0) || 0;
+        yieldUnit = selectUnitPeso ? selectUnitPeso.value : 'g';
+      } else if (yieldType === 'forma') {
+        const qty = parseInt(document.getElementById('base-yieldPanQty').value) || 0;
+        const size = document.getElementById('base-yieldPanSize').value || '';
+        yieldAmount = qty;
+        yieldUnit = size ? `Forma ${size}` : 'Forma';
+      } else if (yieldType === 'unidade') {
+        yieldAmount = parseInt(document.getElementById('base-yieldAmount-unidade').value) || 0;
+        yieldUnit = document.getElementById('base-yieldUnit-unidade').value || 'un';
+      }
+
       const unitCost = yieldAmount > 0 ? totalCost / yieldAmount : 0;
 
       totalCostLabel.textContent = window.app.formatCurrency(totalCost);
-      unitCostLabel.textContent = `${window.app.formatCurrency(unitCost)}/${yieldUnit === 'g' || yieldUnit === 'ml' ? yieldUnit : 'un'}`;
+      unitCostLabel.textContent = `${window.app.formatCurrency(unitCost)}/${yieldUnit}`;
     },
 
     // ID generator fallback
@@ -529,8 +688,25 @@
     async saveBase() {
       const id = document.getElementById('base-id').value || window.bases.generateUUID();
       const name = document.getElementById('base-name').value;
-      const yieldAmount = parseFloat(document.getElementById('base-yieldAmount').value);
-      const yieldUnit = document.getElementById('base-yieldUnit').value;
+      
+      const yieldType = document.getElementById('base-yieldType').value;
+      let yieldAmount = 1;
+      let yieldUnit = 'g';
+      let yieldPanQty = null;
+      let yieldPanSize = null;
+
+      if (yieldType === 'peso') {
+        yieldAmount = parseFloat(document.getElementById('base-yieldAmount-peso').value) || 1;
+        yieldUnit = document.getElementById('base-yieldUnit-peso').value;
+      } else if (yieldType === 'forma') {
+        yieldPanQty = parseInt(document.getElementById('base-yieldPanQty').value) || 1;
+        yieldPanSize = document.getElementById('base-yieldPanSize').value || 'Aro 15';
+        yieldAmount = yieldPanQty;
+        yieldUnit = `Forma ${yieldPanSize}`;
+      } else if (yieldType === 'unidade') {
+        yieldAmount = parseInt(document.getElementById('base-yieldAmount-unidade').value) || 1;
+        yieldUnit = document.getElementById('base-yieldUnit-unidade').value || 'porções';
+      }
 
       if (currentBaseIngredients.length === 0) {
         window.app.showToast('Adicione pelo menos 1 ingrediente!', 'warning');
@@ -554,8 +730,11 @@
         id,
         name,
         ingredients,
+        yieldType,
         yieldAmount,
         yieldUnit,
+        yieldPanQty,
+        yieldPanSize,
         totalCost,
         costPerUnit,
         updatedAt: new Date().toISOString()

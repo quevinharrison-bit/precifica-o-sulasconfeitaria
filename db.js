@@ -121,55 +121,80 @@
       }
 
       // Carregar dados de demonstração se a tabela de ingredientes estiver vazia
+      // Carregar dados de demonstração se a tabela de ingredientes estiver vazia
       const ingredients = await window.db.getAll('ingredients');
       if (ingredients.length === 0) {
         // 1. Cadastrar insumos demo
         const demoIngredients = [
-          { id: 'ing-1', name: 'Leite Condensado', category: 'Laticínios', unit: 'g', packageSize: 395, price: 6.50, pricePerUnit: 6.50 / 395, updatedAt: new Date().toISOString() },
-          { id: 'ing-2', name: 'Farinha de Trigo', category: 'Secos/Farinhas', unit: 'kg', packageSize: 1, price: 5.00, pricePerUnit: 5.00 / 1000, updatedAt: new Date().toISOString() },
-          { id: 'ing-3', name: 'Cacau em Pó 50%', category: 'Chocolates/Cacau', unit: 'g', packageSize: 200, price: 12.00, pricePerUnit: 12.00 / 200, updatedAt: new Date().toISOString() },
-          { id: 'ing-4', name: 'Manteiga sem Sal', category: 'Laticínios', unit: 'g', packageSize: 200, price: 9.50, pricePerUnit: 9.50 / 200, updatedAt: new Date().toISOString() },
+          { id: 'ing-1', name: 'Leite Condensado', category: 'Laticínios', unit: 'caixa_lata', packageSize: 1, packageContentWeight: 395, price: 6.50, pricePerUnit: 6.50 / 395, cupWeight: 300, spoonSopaWeight: 20, spoonSobremesaWeight: 13, spoonChaWeight: 7, updatedAt: new Date().toISOString() },
+          { id: 'ing-2', name: 'Farinha de Trigo', category: 'Secos/Farinhas', unit: 'kg', packageSize: 1, price: 5.00, pricePerUnit: 5.00 / 1000, cupWeight: 120, spoonSopaWeight: 10, spoonSobremesaWeight: 7, spoonChaWeight: 3, updatedAt: new Date().toISOString() },
+          { id: 'ing-3', name: 'Cacau em Pó 50%', category: 'Chocolates/Cacau', unit: 'g', packageSize: 200, price: 12.00, pricePerUnit: 12.00 / 200, cupWeight: 90, spoonSopaWeight: 6, spoonSobremesaWeight: 4, spoonChaWeight: 2, updatedAt: new Date().toISOString() },
+          { id: 'ing-4', name: 'Manteiga sem Sal', category: 'Laticínios', unit: 'g', packageSize: 200, price: 9.50, pricePerUnit: 9.50 / 200, cupWeight: 200, spoonSopaWeight: 12, spoonSobremesaWeight: 8, spoonChaWeight: 4, updatedAt: new Date().toISOString() },
           { id: 'ing-5', name: 'Caixa para Bolo Aro 15', category: 'Embalagens', unit: 'un', packageSize: 1, price: 4.50, pricePerUnit: 4.50, updatedAt: new Date().toISOString() },
           { id: 'ing-6', name: 'Prato de Bolo (Cakeboard)', category: 'Embalagens', unit: 'un', packageSize: 1, price: 3.00, pricePerUnit: 3.00, updatedAt: new Date().toISOString() },
-          { id: 'ing-7', name: 'Morangos Frescos', category: 'Frutas/Frescos', unit: 'g', packageSize: 250, price: 8.00, pricePerUnit: 8.00 / 250, updatedAt: new Date().toISOString() },
-          { id: 'ing-8', name: 'Ovos', category: 'Ovos/Fermentos', unit: 'un', packageSize: 30, price: 18.00, pricePerUnit: 18.00 / 30, updatedAt: new Date().toISOString() }
+          { id: 'ing-7', name: 'Morangos Frescos', category: 'Frutas/Frescos', unit: 'g', packageSize: 250, price: 8.00, pricePerUnit: 8.00 / 250, cupWeight: 150, spoonSopaWeight: 15, spoonSobremesaWeight: 10, spoonChaWeight: 5, updatedAt: new Date().toISOString() },
+          { id: 'ing-8', name: 'Ovos', category: 'Ovos/Fermentos', unit: 'duzia', packageSize: 2.5, price: 15.00, pricePerUnit: 15.00 / 30, updatedAt: new Date().toISOString() },
+          { id: 'ing-9', name: 'Açúcar Refinado', category: 'Açúcares/Adoçantes', unit: 'kg', packageSize: 1, price: 4.50, pricePerUnit: 4.50 / 1000, cupWeight: 180, spoonSopaWeight: 12, spoonSobremesaWeight: 8, spoonChaWeight: 4, updatedAt: new Date().toISOString() }
         ];
 
         for (const ing of demoIngredients) {
           await window.db.put('ingredients', ing);
         }
 
-        // 2. Cadastrar base demo (Recheio Brigadeiro)
+        // 2. Cadastrar bases demo
         const brigadeiroCost = (395 * (6.50 / 395)) + (40 * (12.00 / 200)) + (20 * (9.50 / 200)); // ~9.85
-        const demoBase = {
+        const demoBase1 = {
           id: 'base-1',
           name: 'Brigadeiro Tradicional',
           ingredients: [
-            { ingredientId: 'ing-1', quantity: 395 },
-            { ingredientId: 'ing-3', quantity: 40 },
-            { ingredientId: 'ing-4', quantity: 20 }
+            { ingredientId: 'ing-1', quantity: 395, originalQty: 1, originalUnit: 'caixa_lata' },
+            { ingredientId: 'ing-3', quantity: 40, originalQty: 40, originalUnit: 'g' },
+            { ingredientId: 'ing-4', quantity: 20, originalQty: 20, originalUnit: 'g' }
           ],
+          yieldType: 'peso',
           yieldAmount: 400,
           yieldUnit: 'g',
           totalCost: brigadeiroCost,
           costPerUnit: brigadeiroCost / 400,
           updatedAt: new Date().toISOString()
         };
-        await window.db.put('bases', demoBase);
+        await window.db.put('bases', demoBase1);
+
+        const poloCost = (240 * (5.00 / 1000)) + (180 * (4.50 / 1000)) + (4 * 0.50) + (50 * (9.50 / 200)); // 1.20 + 0.81 + 2.00 + 2.37 = 6.38
+        const demoBase2 = {
+          id: 'base-2',
+          name: 'Massa Pão de Ló (Aro 15)',
+          ingredients: [
+            { ingredientId: 'ing-2', quantity: 240, originalQty: 2, originalUnit: 'xicara' },
+            { ingredientId: 'ing-9', quantity: 180, originalQty: 1, originalUnit: 'xicara' },
+            { ingredientId: 'ing-8', quantity: 4, originalQty: 4, originalUnit: 'un' },
+            { ingredientId: 'ing-4', quantity: 50, originalQty: 50, originalUnit: 'g' }
+          ],
+          yieldType: 'forma',
+          yieldAmount: 2,
+          yieldUnit: 'Forma Aro 15',
+          yieldPanQty: 2,
+          yieldPanSize: 'Aro 15',
+          totalCost: poloCost,
+          costPerUnit: poloCost / 2,
+          updatedAt: new Date().toISOString()
+        };
+        await window.db.put('bases', demoBase2);
 
         // 3. Cadastrar produto demo (Bolo Decorado Morango Aro 15)
-        const cpv = brigadeiroCost + 3.00 + 4.50 + (150 * (8.00 / 250)); // CPV = 22.15
-        const totalCost = cpv + (cpv * 0.15) + (60 / 60 * 15.00); // 40.47
-        const suggestedPrice = totalCost / (1 - 0.05 - 0.30); // 62.26
+        const cpv = (poloCost / 2) + brigadeiroCost + 3.00 + 4.50 + (150 * (8.00 / 250)); // CPV = 3.19 + 9.85 + 3.00 + 4.50 + 4.80 = 25.34
+        const totalCost = cpv + (cpv * 0.15) + (60 / 60 * 15.00); // 25.34 + 3.80 + 15.00 = 44.14
+        const suggestedPrice = totalCost / (1 - 0.05 - 0.30); // 44.14 / 0.65 = 67.91
         
         const demoProduct = {
           id: 'prod-1',
           name: 'Bolo Decorado Morango Aro 15',
           items: [
-            { type: 'base', itemId: 'base-1', quantity: 400 },
-            { type: 'ingredient', itemId: 'ing-7', quantity: 150 },
-            { type: 'package', itemId: 'ing-6', quantity: 1 },
-            { type: 'package', itemId: 'ing-5', quantity: 1 }
+            { type: 'base', itemId: 'base-2', quantity: 1, originalQty: 1, originalUnit: 'forma' },
+            { type: 'base', itemId: 'base-1', quantity: 400, originalQty: 400, originalUnit: 'g' },
+            { type: 'ingredient', itemId: 'ing-7', quantity: 150, originalQty: 1, originalUnit: 'xicara' },
+            { type: 'package', itemId: 'ing-6', quantity: 1, originalQty: 1, originalUnit: 'un' },
+            { type: 'package', itemId: 'ing-5', quantity: 1, originalQty: 1, originalUnit: 'un' }
           ],
           indirectCostPercent: 15,
           laborTimeMinutes: 60,
@@ -179,9 +204,9 @@
           finalPriceSuggested: suggestedPrice,
           cpv: cpv,
           totalCost: totalCost,
-          finalPriceSet: 65.00,
-          profitValue: 65.00 - totalCost - (65.00 * 0.05),
-          profitPercent: ((65.00 - totalCost - (65.00 * 0.05)) / 65.00) * 100,
+          finalPriceSet: 70.00,
+          profitValue: 70.00 - totalCost - (70.00 * 0.05),
+          profitPercent: ((70.00 - totalCost - (70.00 * 0.05)) / 70.00) * 100,
           breakevenPrice: totalCost / 0.95,
           updatedAt: new Date().toISOString()
         };
