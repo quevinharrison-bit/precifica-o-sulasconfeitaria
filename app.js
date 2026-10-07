@@ -1,9 +1,10 @@
 /**
- * app.js - Central Controller, Router and State Manager
+ * app.js - Central Controller, Router, PWA Manager and State Manager
  */
 
 (() => {
   let activeTab = 'dashboard';
+  let deferredPrompt = null;
 
   // Helper interno seguro para renderizar ícones lucide
   function safeCreateIcons() {
@@ -15,6 +16,28 @@
       }
     }
   }
+
+  // Registrar Service Worker para suporte PWA e modo offline
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js').then((reg) => {
+        console.log('[PWA] Service Worker registrado com sucesso no escopo:', reg.scope);
+      }).catch((err) => {
+        console.warn('[PWA] Falha no registro do Service Worker:', err);
+      });
+    });
+  }
+
+  // Capturar evento de instalação do PWA (beforeinstallprompt)
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    const banner = document.getElementById('pwa-install-banner');
+    if (banner) {
+      banner.classList.remove('hidden');
+      safeCreateIcons();
+    }
+  });
 
   window.app = {
     /**
@@ -33,8 +56,9 @@
         await window.bases.init();
         await window.products.init();
 
-        // 4. Registrar eventos comuns de cabeçalho e configurações
+        // 4. Registrar eventos comuns de cabeçalho, PWA e configurações
         window.app.registerGlobalEvents();
+        window.app.registerPwaEvents();
 
         // 5. Carregar aba inicial
         await window.app.switchTab('dashboard');
@@ -46,7 +70,6 @@
       } catch (err) {
         console.error('Falha ao iniciar app:', err);
         
-        // Esconder o loader e mostrar mensagem amigável de erro
         const loader = document.getElementById('tab-loading');
         if (loader) loader.classList.add('hidden');
 
@@ -66,6 +89,29 @@
           `;
           safeCreateIcons();
         }
+      }
+    },
+
+    /**
+     * Registra manipulação do banner de instalação do PWA
+     */
+    registerPwaEvents() {
+      const btnInstallPWA = document.getElementById('btn-install-pwa');
+      if (btnInstallPWA) {
+        btnInstallPWA.addEventListener('click', async () => {
+          if (!deferredPrompt) {
+            window.app.showToast('Abra a opção do seu navegador e selecione "Adicionar à Tela Inicial".', 'info');
+            return;
+          }
+          deferredPrompt.prompt();
+          const { outcome } = await deferredPrompt.userChoice;
+          if (outcome === 'accepted') {
+            window.app.showToast('Aplicativo instalado com sucesso!', 'success');
+          }
+          deferredPrompt = null;
+          const banner = document.getElementById('pwa-install-banner');
+          if (banner) banner.classList.add('hidden');
+        });
       }
     },
 
@@ -150,7 +196,7 @@
     },
 
     /**
-     * Registra eventos globais (ex: configurações, alteração de tema)
+     * Registra eventos globais (ex: configurações, alteração de tema e hora confeiteira)
      */
     registerGlobalEvents() {
       // Botões de aba
@@ -178,15 +224,53 @@
       const btnCloseSettings = document.getElementById('close-settings');
       const formSettings = document.getElementById('form-settings');
 
+      // Inputs da Calculadora de Hora Confeiteira
+      const inputSalary = document.getElementById('settings-desiredSalary');
+      const inputHours = document.getElementById('settings-monthlyHours');
+      const inputRate = document.getElementById('settings-workHourRate');
+      const lblRateCalculated = document.getElementById('lbl-settings-hour-rate-calculated');
+
+      const updateHourRateLive = () => {
+        const salary = parseFloat(inputSalary.value) || 0;
+        const hours = parseFloat(inputHours.value) || 1;
+        if (salary > 0 && hours > 0) {
+          const calculatedRate = salary / hours;
+          inputRate.value = calculatedRate.toFixed(2);
+          if (lblRateCalculated) {
+            lblRateCalculated.textContent = `${window.app.formatCurrency(calculatedRate)}/h`;
+          }
+        }
+      };
+
+      if (inputSalary && inputHours && inputRate) {
+        inputSalary.addEventListener('input', updateHourRateLive);
+        inputHours.addEventListener('input', updateHourRateLive);
+        inputRate.addEventListener('input', () => {
+          const val = parseFloat(inputRate.value) || 0;
+          if (lblRateCalculated) {
+            lblRateCalculated.textContent = `${window.app.formatCurrency(val)}/h`;
+          }
+        });
+      }
+
       if (btnSettings && modalSettings) {
         btnSettings.addEventListener('click', async () => {
-          const settings = await window.db.get('settings', 'config');
-          if (settings) {
-            document.getElementById('settings-workHourRate').value = settings.workHourRate.toFixed(2);
-            document.getElementById('settings-indirectCostDefault').value = settings.indirectCostDefault;
-            document.getElementById('settings-taxDefault').value = settings.taxDefault;
-          }
+          const settings = await window.db.get('settings', 'config') || {};
+          
+          const salary = settings.desiredSalary !== undefined ? settings.desiredSalary : 3000;
+          const hours = settings.monthlyHours !== undefined ? settings.monthlyHours : 160;
+          const rate = settings.workHourRate !== undefined ? settings.workHourRate : (salary / hours);
+
+          if (inputSalary) inputSalary.value = salary;
+          if (inputHours) inputHours.value = hours;
+          if (inputRate) inputRate.value = rate.toFixed(2);
+          if (lblRateCalculated) lblRateCalculated.textContent = `${window.app.formatCurrency(rate)}/h`;
+
+          document.getElementById('settings-indirectCostDefault').value = settings.indirectCostDefault !== undefined ? settings.indirectCostDefault : 15;
+          document.getElementById('settings-taxDefault').value = settings.taxDefault !== undefined ? settings.taxDefault : 5;
+
           modalSettings.classList.remove('hidden');
+          safeCreateIcons();
         });
       }
 
@@ -200,19 +284,23 @@
         formSettings.addEventListener('submit', async (e) => {
           e.preventDefault();
           
-          const workHourRate = parseFloat(document.getElementById('settings-workHourRate').value) || 0;
+          const desiredSalary = parseFloat(inputSalary.value) || 3000;
+          const monthlyHours = parseFloat(inputHours.value) || 160;
+          const workHourRate = parseFloat(inputRate.value) || (desiredSalary / monthlyHours);
           const indirectCostDefault = parseFloat(document.getElementById('settings-indirectCostDefault').value) || 0;
           const taxDefault = parseFloat(document.getElementById('settings-taxDefault').value) || 0;
 
           try {
             await window.db.put('settings', {
               id: 'config',
+              desiredSalary,
+              monthlyHours,
               workHourRate,
               indirectCostDefault,
               taxDefault
             });
             
-            window.app.showToast('Configurações salvas!', 'success');
+            window.app.showToast('Configurações de produção salvas!', 'success');
             modalSettings.classList.add('hidden');
 
             // Recalcular custos dependentes das configurações
@@ -251,7 +339,6 @@
 
       const toast = document.createElement('div');
       
-      // Classes conforme o tipo
       let typeClasses = 'bg-white border-emerald-100 text-emerald-800 dark:bg-emerald-950/90 dark:border-emerald-900 dark:text-emerald-300 shadow-md';
       let iconName = 'check-circle';
       
@@ -275,12 +362,10 @@
       container.appendChild(toast);
       safeCreateIcons();
 
-      // Trigger de animação de entrada
       requestAnimationFrame(() => {
         toast.classList.remove('translate-y-2', 'opacity-0');
       });
 
-      // Temporizador de destruição
       setTimeout(() => {
         toast.classList.add('translate-y-[-8px]', 'opacity-0');
         toast.addEventListener('transitionend', () => {
@@ -290,7 +375,6 @@
     }
   };
 
-  // Iniciar a aplicação após o DOM carregar de forma totalmente tolerante
   if (document.readyState === 'loading') {
     window.addEventListener('DOMContentLoaded', () => {
       window.app.init();

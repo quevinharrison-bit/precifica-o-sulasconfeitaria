@@ -78,6 +78,33 @@
             <form id="form-ingredient" class="space-y-4 pt-4">
               <input type="hidden" id="ingredient-id">
               
+              <!-- Atalhos Rápidos da Confeitaria -->
+              <div class="p-3 bg-pink-50/70 border border-pink-100 rounded-2xl space-y-2">
+                <span class="block text-[11px] font-bold text-pink-900 flex items-center gap-1">
+                  <i data-lucide="zap" class="w-3.5 h-3.5 text-sweet-500"></i> Atalhos Rápidos de Confeitaria:
+                </span>
+                <div class="flex flex-wrap gap-1.5">
+                  <button type="button" data-preset="leite_moca" class="btn-preset bg-white text-sweet-800 hover:bg-pink-100 px-2.5 py-1 rounded-xl text-[11px] font-bold border border-sweet-200 transition-colors shadow-2xs active:scale-95">
+                    🥛 Leite Moça (395g)
+                  </button>
+                  <button type="button" data-preset="creme_leite" class="btn-preset bg-white text-sweet-800 hover:bg-pink-100 px-2.5 py-1 rounded-xl text-[11px] font-bold border border-sweet-200 transition-colors shadow-2xs active:scale-95">
+                    🍦 Creme de Leite (200g)
+                  </button>
+                  <button type="button" data-preset="barra_chocolate" class="btn-preset bg-white text-sweet-800 hover:bg-pink-100 px-2.5 py-1 rounded-xl text-[11px] font-bold border border-sweet-200 transition-colors shadow-2xs active:scale-95">
+                    🍫 Chocolate Barra (1kg)
+                  </button>
+                  <button type="button" data-preset="farinha_trigo" class="btn-preset bg-white text-sweet-800 hover:bg-pink-100 px-2.5 py-1 rounded-xl text-[11px] font-bold border border-sweet-200 transition-colors shadow-2xs active:scale-95">
+                    🌾 Farinha (1kg)
+                  </button>
+                  <button type="button" data-preset="acucar_refinado" class="btn-preset bg-white text-sweet-800 hover:bg-pink-100 px-2.5 py-1 rounded-xl text-[11px] font-bold border border-sweet-200 transition-colors shadow-2xs active:scale-95">
+                    🍬 Açúcar (1kg)
+                  </button>
+                  <button type="button" data-preset="manteiga" class="btn-preset bg-white text-sweet-800 hover:bg-pink-100 px-2.5 py-1 rounded-xl text-[11px] font-bold border border-sweet-200 transition-colors shadow-2xs active:scale-95">
+                    🧈 Manteiga (200g)
+                  </button>
+                </div>
+              </div>
+
               <div>
                 <label class="block text-xs font-semibold text-sweet-800 mb-1" for="ingredient-name">Nome do Insumo</label>
                 <input type="text" id="ingredient-name" required placeholder="Ex: Leite Condensado Moça"
@@ -275,6 +302,15 @@
         btnClose.addEventListener('click', () => window.ingredients.closeModal());
       }
 
+      // Atalhos Rápidos da Confeitaria
+      const presetButtons = document.querySelectorAll('.btn-preset');
+      presetButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          const type = btn.getAttribute('data-preset');
+          window.ingredients.applyPreset(type);
+        });
+      });
+
       const selectUnit = document.getElementById('ingredient-unit');
       const labelPackageSize = document.getElementById('label-packageSize');
       const divCaseiras = document.getElementById('div-caseiras-container');
@@ -442,6 +478,46 @@
       // Disponibilizar globalmente para o onclick
       window.appActions = window.appActions || {};
       window.appActions.editIngredient = (id) => window.ingredients.openModal(id);
+    },
+
+    /**
+     * Aplica um atalho pré-definido de insumo da confeitaria
+     */
+    applyPreset(presetType) {
+      const presets = {
+        leite_moca: { name: 'Leite Condensado Moça', category: 'Laticínios', unit: 'g', packageSize: 395, price: 6.50, cupWeight: 395, spoonSopaWeight: 30 },
+        creme_leite: { name: 'Creme de Leite NESTLÉ', category: 'Laticínios', unit: 'g', packageSize: 200, price: 3.90, cupWeight: 200, spoonSopaWeight: 15 },
+        barra_chocolate: { name: 'Chocolate em Barra Melken', category: 'Chocolates/Cacau', unit: 'g', packageSize: 1000, price: 42.00, cupWeight: 90, spoonSopaWeight: 10 },
+        farinha_trigo: { name: 'Farinha de Trigo Especial', category: 'Secos/Farinhas', unit: 'kg', packageSize: 1, price: 5.50, cupWeight: 120, spoonSopaWeight: 10, spoonSobremesaWeight: 7, spoonChaWeight: 3 },
+        acucar_refinado: { name: 'Açúcar Refinado União', category: 'Açúcares/Adoçantes', unit: 'kg', packageSize: 1, price: 4.80, cupWeight: 180, spoonSopaWeight: 12, spoonSobremesaWeight: 8, spoonChaWeight: 4 },
+        manteiga: { name: 'Manteiga Extra Sem Sal', category: 'Laticínios', unit: 'g', packageSize: 200, price: 11.50, cupWeight: 200, spoonSopaWeight: 15 }
+      };
+
+      const p = presets[presetType];
+      if (!p) return;
+
+      document.getElementById('ingredient-name').value = p.name;
+      document.getElementById('ingredient-category').value = p.category;
+      document.getElementById('ingredient-unit').value = p.unit;
+      document.getElementById('ingredient-packageSize').value = p.packageSize;
+      document.getElementById('ingredient-price').value = p.price.toFixed(2);
+      
+      if (p.cupWeight) document.getElementById('ingredient-cupWeight').value = p.cupWeight;
+      if (p.spoonSopaWeight) document.getElementById('ingredient-spoonSopaWeight').value = p.spoonSopaWeight;
+      if (p.spoonSobremesaWeight) document.getElementById('ingredient-spoonSobremesaWeight').value = p.spoonSobremesaWeight;
+      if (p.spoonChaWeight) document.getElementById('ingredient-spoonChaWeight').value = p.spoonChaWeight;
+
+      const selectUnit = document.getElementById('ingredient-unit');
+      if (selectUnit) {
+        selectUnit.dispatchEvent(new Event('change'));
+      }
+
+      const inputPrice = document.getElementById('ingredient-price');
+      if (inputPrice) {
+        inputPrice.dispatchEvent(new Event('input'));
+      }
+      
+      window.app.showToast(`Preenchido com o atalho: ${p.name}!`, 'info');
     },
 
     /**

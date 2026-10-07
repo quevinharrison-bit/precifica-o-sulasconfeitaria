@@ -129,13 +129,26 @@
             <form id="form-product" class="flex-1 overflow-y-auto custom-scroll py-4 space-y-5 pr-1">
               <input type="hidden" id="product-id">
               
-              <!-- Etapa 1: Nome do Produto -->
+              <!-- Etapa 1: Nome e Rendimento do Produto -->
               <div class="space-y-3">
                 <h4 class="text-xs font-bold text-sweet-500 uppercase tracking-wider">1. Informações Básicas</h4>
                 <div>
                   <label class="block text-xs font-semibold text-sweet-800 mb-1" for="product-name">Nome do Produto para Venda</label>
                   <input type="text" id="product-name" required placeholder="Ex: Bolo Decorado Morango Aro 15"
                     class="w-full h-12 px-3 py-2 border border-sweet-200 rounded-xl focus:outline-none focus:border-sweet-500 text-base font-medium">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                  <div>
+                    <label class="block text-xs font-semibold text-sweet-800 mb-1" for="product-yield-amount">Rendimento (Qtd. Produzida)</label>
+                    <input type="number" id="product-yield-amount" step="1" min="1" value="1" placeholder="Ex: 40" inputmode="numeric"
+                      class="w-full h-12 px-3 py-2 border border-sweet-200 rounded-xl focus:outline-none focus:border-sweet-500 text-base font-medium">
+                  </div>
+                  <div>
+                    <label class="block text-xs font-semibold text-sweet-800 mb-1" for="product-yield-unit">Tipo de Porção</label>
+                    <input type="text" id="product-yield-unit" value="unidades" placeholder="Ex: brigadeiros, fatias, bolos"
+                      class="w-full h-12 px-3 py-2 border border-sweet-200 rounded-xl focus:outline-none focus:border-sweet-500 text-base font-medium">
+                  </div>
                 </div>
               </div>
 
@@ -206,7 +219,7 @@
                   <div>
                     <label class="block text-xs font-semibold text-sweet-800 mb-1" for="product-labor-time">Tempo de Preparo (min)</label>
                     <div class="relative">
-                      <input type="number" id="product-labor-time" min="0" value="30"
+                      <input type="number" id="product-labor-time" min="0" value="30" inputmode="numeric"
                         class="w-full px-3 py-1.5 border border-sweet-200 rounded-xl focus:outline-none focus:border-sweet-500 text-xs font-medium">
                       <span class="absolute right-3 top-2 text-[10px] text-sweet-600">min</span>
                     </div>
@@ -219,7 +232,7 @@
                   <div>
                     <label class="block text-xs font-semibold text-sweet-800 mb-1" for="product-tax-percent">Taxas / Venda (%)</label>
                     <div class="relative">
-                      <input type="number" id="product-tax-percent" step="0.1" min="0" max="50" value="5"
+                      <input type="number" id="product-tax-percent" step="0.1" min="0" max="50" value="5" inputmode="decimal"
                         class="w-full pr-7 pl-3 py-1.5 border border-sweet-200 rounded-xl focus:outline-none focus:border-sweet-500 text-xs font-medium">
                       <span class="absolute right-3 top-2 text-[10px] text-sweet-600">%</span>
                     </div>
@@ -262,6 +275,20 @@
                   </div>
                 </div>
 
+                <!-- Preview de Valores Unitários -->
+                <div class="p-3 bg-pink-50/60 rounded-2xl border border-pink-100/80 grid grid-cols-2 gap-3 text-xs">
+                  <div>
+                    <span class="block text-[10px] text-sweet-600 font-semibold uppercase">Custo Unitário</span>
+                    <span class="text-sm font-bold text-sweet-900" id="res-unit-cost">R$ 0,00</span>
+                    <p class="text-[9px] text-sweet-600 leading-tight">Por porção/unidade</p>
+                  </div>
+                  <div>
+                    <span class="block text-[10px] text-sweet-600 font-semibold uppercase">Preço Unitário Sugerido</span>
+                    <span class="text-sm font-bold text-sweet-500" id="res-unit-price-suggested">R$ 0,00</span>
+                    <p class="text-[9px] text-sweet-600 leading-tight">Venda por unidade</p>
+                  </div>
+                </div>
+
                 <!-- Definir Preço Próprio de Venda -->
                 <div class="p-3.5 bg-white rounded-2xl border border-sweet-200 shadow-sm space-y-2">
                   <div class="flex items-center justify-between">
@@ -272,7 +299,7 @@
                   </div>
                   <div class="relative">
                     <span class="absolute left-3 top-2.5 text-sm text-sweet-600 font-medium">R$</span>
-                    <input type="number" id="product-price-set" step="0.01" min="0" placeholder="Digite o preço final que vai cobrar"
+                    <input type="number" id="product-price-set" step="0.01" min="0" placeholder="Digite o preço final que vai cobrar" inputmode="decimal"
                       class="w-full pl-9 pr-3 py-2 border border-sweet-200 rounded-xl focus:outline-none focus:border-sweet-500 text-sm font-bold">
                   </div>
                   
@@ -303,13 +330,16 @@
 
             <!-- Rodapé do Modal -->
             <div class="pt-4 border-t border-sweet-100 flex gap-2 flex-shrink-0">
-              <button type="button" id="btn-delete-product-modal" class="hidden bg-rose-50 text-rose-600 border border-rose-200 px-4 py-2.5 rounded-xl font-bold hover:bg-rose-100 transition-colors text-xs flex items-center justify-center gap-1.5">
+              <button type="button" id="btn-delete-product-modal" class="hidden bg-rose-50 text-rose-600 border border-rose-200 px-3 py-2.5 rounded-xl font-bold hover:bg-rose-100 transition-colors text-xs flex items-center justify-center gap-1.5">
                 <i data-lucide="trash-2" class="w-4 h-4"></i> Excluir
               </button>
-              <button type="button" id="btn-export-pdf" class="bg-sweet-100 hover:bg-sweet-200 text-sweet-800 px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5">
+              <button type="button" id="btn-export-whatsapp" class="bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-95">
+                <i data-lucide="message-square" class="w-4 h-4"></i> WhatsApp
+              </button>
+              <button type="button" id="btn-export-pdf" class="bg-sweet-100 hover:bg-sweet-200 text-sweet-800 px-3 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5">
                 <i data-lucide="printer" class="w-4 h-4"></i> Ficha Técnica
               </button>
-              <button type="button" id="btn-save-product" class="flex-1 bg-sweet-500 hover:bg-sweet-600 text-white py-2.5 rounded-xl font-bold transition-colors shadow-sm text-xs flex items-center justify-center gap-1.5">
+              <button type="button" id="btn-save-product" class="flex-1 bg-sweet-500 hover:bg-sweet-600 text-white py-2.5 rounded-xl font-bold transition-colors shadow-sm text-xs flex items-center justify-center gap-1.5 active:scale-95">
                 <i data-lucide="check" class="w-4 h-4"></i> Salvar Produto
               </button>
             </div>
@@ -721,10 +751,14 @@
       const inputLaborTime = document.getElementById('product-labor-time');
       const inputTax = document.getElementById('product-tax-percent');
       const inputPriceSet = document.getElementById('product-price-set');
+      const inputYieldAmount = document.getElementById('product-yield-amount');
+      const inputYieldUnit = document.getElementById('product-yield-unit');
 
       if (inputLaborTime) inputLaborTime.addEventListener('input', () => window.products.recalculatePricing());
       if (inputTax) inputTax.addEventListener('input', () => window.products.recalculatePricing());
       if (inputPriceSet) inputPriceSet.addEventListener('input', () => window.products.recalculatePricing(true));
+      if (inputYieldAmount) inputYieldAmount.addEventListener('input', () => window.products.recalculatePricing());
+      if (inputYieldUnit) inputYieldUnit.addEventListener('input', () => window.products.recalculatePricing());
 
       // Botão de Usar Preço Sugerido
       const btnUseSuggested = document.getElementById('btn-use-suggested');
@@ -754,6 +788,14 @@
       if (btnSave) {
         btnSave.addEventListener('click', async () => {
           await window.products.saveProduct();
+        });
+      }
+
+      // Exportar WhatsApp
+      const btnWhatsApp = document.getElementById('btn-export-whatsapp');
+      if (btnWhatsApp) {
+        btnWhatsApp.addEventListener('click', () => {
+          window.products.exportWhatsApp();
         });
       }
 
@@ -810,6 +852,8 @@
           title.innerHTML = `<i data-lucide="edit" class="w-5 h-5 text-sweet-500"></i> Editar Produto`;
           document.getElementById('product-id').value = item.id;
           document.getElementById('product-name').value = item.name;
+          document.getElementById('product-yield-amount').value = item.yieldAmount || 1;
+          document.getElementById('product-yield-unit').value = item.yieldUnit || 'unidades';
           
           const ingredientsMap = new Map(ingredientsList.map(ing => [ing.id, ing]));
           const basesMap = new Map(basesList.map(base => [base.id, base]));
@@ -1033,6 +1077,25 @@
         resProfitVal.className = 'text-xs font-bold text-emerald-600';
         resProfitPct.className = 'text-xs font-bold text-emerald-600';
       }
+
+      // Cálculo e exibição ao vivo de valores unitários
+      const yieldAmountInput = document.getElementById('product-yield-amount');
+      const yieldUnitInput = document.getElementById('product-yield-unit');
+      const resUnitCost = document.getElementById('res-unit-cost');
+      const resUnitPriceSuggested = document.getElementById('res-unit-price-suggested');
+
+      const yieldAmount = parseFloat(yieldAmountInput ? yieldAmountInput.value : 1) || 1;
+      const yieldUnit = yieldUnitInput ? yieldUnitInput.value.trim() : 'unidades';
+      const shortUnit = yieldUnit.length > 8 ? yieldUnit.slice(0, 7) + '.' : yieldUnit;
+
+      if (resUnitCost) {
+        const unitCost = totalCost / yieldAmount;
+        resUnitCost.textContent = `${window.app.formatCurrency(unitCost)}/${shortUnit}`;
+      }
+      if (resUnitPriceSuggested) {
+        const unitPrice = priceToEvaluate / yieldAmount;
+        resUnitPriceSuggested.textContent = `${window.app.formatCurrency(unitPrice)}/${shortUnit}`;
+      }
     },
 
     // ID generator fallback
@@ -1051,6 +1114,8 @@
     async saveProduct() {
       const id = document.getElementById('product-id').value || window.products.generateUUID();
       const name = document.getElementById('product-name').value;
+      const yieldAmount = parseFloat(document.getElementById('product-yield-amount').value) || 1;
+      const yieldUnit = document.getElementById('product-yield-unit').value || 'unidades';
       
       if (!name) {
         window.app.showToast('Informe o nome do produto!', 'warning');
@@ -1089,9 +1154,16 @@
       const breakevenDivisor = 1 - (taxPercent / 100);
       const breakevenPrice = breakevenDivisor > 0 ? totalCost / breakevenDivisor : totalCost;
 
+      const unitCost = totalCost / yieldAmount;
+      const unitPrice = actualPrice / yieldAmount;
+
       const data = {
         id,
         name,
+        yieldAmount,
+        yieldUnit,
+        unitCost,
+        unitPrice,
         items: currentProductItems.map(item => ({
           type: item.type,
           itemId: item.itemId,
@@ -1141,6 +1213,91 @@
       } catch (err) {
         console.error(err);
         window.app.showToast('Erro ao excluir produto.', 'error');
+      }
+    },
+
+    /**
+     * Exporta Ficha Técnica para o WhatsApp
+     */
+    exportWhatsApp() {
+      const name = document.getElementById('product-name').value || 'Sem Nome';
+      const yieldAmount = parseFloat(document.getElementById('product-yield-amount').value) || 1;
+      const yieldUnit = document.getElementById('product-yield-unit').value || 'unidades';
+
+      const itemsList = currentProductItems;
+      if (itemsList.length === 0) {
+        window.app.showToast('Adicione pelo menos 1 item na receita para gerar a ficha técnica!', 'warning');
+        return;
+      }
+
+      let cpv = 0;
+      let packageCost = 0;
+      itemsList.forEach(item => {
+        const cost = item.quantity * item.costPerUnit;
+        if (item.type === 'package') packageCost += cost;
+        else cpv += cost;
+      });
+
+      const indirectPct = parseFloat(document.getElementById('product-indirect-percent').value) || 0;
+      const laborTime = parseFloat(document.getElementById('product-labor-time').value) || 0;
+      const taxPct = parseFloat(document.getElementById('product-tax-percent').value) || 0;
+
+      const indirectCost = (cpv + packageCost) * (indirectPct / 100);
+      const laborCost = (laborTime / 60) * globalSettings.workHourRate;
+      const totalCost = cpv + packageCost + indirectCost + laborCost;
+
+      const priceSet = parseFloat(document.getElementById('product-price-set').value) || 0;
+      const suggestedStr = document.getElementById('res-price-suggested').textContent.replace('R$', '').trim();
+      const suggested = parseFloat(suggestedStr.replace('.', '').replace(',', '.')) || totalCost;
+
+      const actualPrice = priceSet > 0 ? priceSet : suggested;
+      const taxesPaid = actualPrice * (taxPct / 100);
+      const profitValue = actualPrice - totalCost - taxesPaid;
+      const profitPercent = actualPrice > 0 ? (profitValue / actualPrice) * 100 : 0;
+
+      const unitCost = totalCost / yieldAmount;
+      const unitPrice = actualPrice / yieldAmount;
+
+      let text = `🎂 *FICHA TÉCNICA E PRECIFICAÇÃO*\n`;
+      text += `*Produto:* ${name}\n`;
+      text += `*Rendimento:* ${yieldAmount} ${yieldUnit}\n`;
+      text += `*Data:* ${new Date().toLocaleDateString('pt-BR')}\n\n`;
+
+      text += `📋 *COMPOSIÇÃO E INSUMOS:*\n`;
+      itemsList.forEach(item => {
+        const cost = item.quantity * item.costPerUnit;
+        let unitLabel = item.originalUnit || item.unit;
+        text += `• ${item.name} (${item.originalQty || item.quantity} ${unitLabel}): ${window.app.formatCurrency(cost)}\n`;
+      });
+
+      text += `\n💰 *RESUMO DE CUSTOS DE PRODUÇÃO:*\n`;
+      text += `- Matéria-Prima & Bases: ${window.app.formatCurrency(cpv)}\n`;
+      if (packageCost > 0) text += `- Embalagens & Descartáveis: ${window.app.formatCurrency(packageCost)}\n`;
+      text += `- Custos Invisíveis (${indirectPct}%): ${window.app.formatCurrency(indirectCost)}\n`;
+      text += `- Mão de Obra (${laborTime} min): ${window.app.formatCurrency(laborCost)}\n`;
+      text += `👉 *CUSTO TOTAL DE FABRICAÇÃO:* ${window.app.formatCurrency(totalCost)}\n\n`;
+
+      text += `🏷️ *PRECIFICAÇÃO & RESULTADOS:*\n`;
+      text += `- Preço Sugerido: ${window.app.formatCurrency(suggested)}\n`;
+      text += `- Preço Praticado: ${window.app.formatCurrency(actualPrice)}\n`;
+      text += `- Lucro Líquido Real: ${window.app.formatCurrency(profitValue)} (${profitPercent.toFixed(1)}%)\n\n`;
+
+      if (yieldAmount > 1) {
+        text += `💡 *VALORES UNITÁRIOS (${yieldUnit}):*\n`;
+        text += `• Custo por unitário: ${window.app.formatCurrency(unitCost)}\n`;
+        text += `• Preço de Venda unitário: ${window.app.formatCurrency(unitPrice)}\n\n`;
+      }
+
+      text += `_Gerado por Precificação Sulla Confeitaria_`;
+
+      const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+
+      try {
+        window.open(whatsappUrl, '_blank');
+        window.app.showToast('Ficha técnica gerada para o WhatsApp!', 'success');
+      } catch (err) {
+        navigator.clipboard.writeText(text);
+        window.app.showToast('Ficha técnica copiada para a área de transferência!', 'info');
       }
     },
 

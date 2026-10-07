@@ -3,7 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Precificação - Confeitaria Inteligente</title>
+  <title>Precificação - Sulla Confeitaria</title>
+  
+  <!-- PWA Meta Tags & Manifest -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#ec4899">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Precificação">
   
   <!-- Tailwind CSS v3 -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -32,7 +39,7 @@
   </script>
   
   <!-- Custom Styles -->
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="css/style.css?v=2.0">
   
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -50,15 +57,15 @@
         <i data-lucide="cake" class="w-5 h-5"></i>
       </div>
       <div>
-        <h1 class="text-lg font-bold tracking-tight text-sweet-900">Precificação</h1>
-        <p class="text-[10px] text-sweet-600 font-medium">Gestão e Custos de Confeitaria</p>
+        <h1 class="text-lg font-bold tracking-tight text-sweet-900 leading-tight">Precificação</h1>
+        <p class="text-[10px] text-sweet-600 font-medium">Sulla Confeitaria</p>
       </div>
     </div>
     
     <div class="flex items-center gap-2">
       <!-- Indicador de Status Offline -->
       <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-300">
-        <span class="w-1.5 h-1.5 mr-1 rounded-full bg-emerald-500 animate-pulse"></span> Local
+        <span class="w-1.5 h-1.5 mr-1 rounded-full bg-emerald-500 animate-pulse"></span> PWA
       </span>
       
       <!-- Alternador de Tema Escuro -->
@@ -75,6 +82,23 @@
 
   <!-- Container Principal Rolável -->
   <main id="main-content" class="flex-1 overflow-y-auto pb-24 px-4 pt-4 max-w-md mx-auto w-full">
+    
+    <!-- Banner de Instalação PWA (Exibido se o app for instalável) -->
+    <div id="pwa-install-banner" class="hidden mb-4 p-3.5 bg-gradient-to-r from-pink-500 to-rose-500 text-white rounded-2xl shadow-md flex items-center justify-between animate-slide-in">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm text-white">
+          <i data-lucide="smartphone" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <h4 class="text-xs font-bold leading-tight">Instalar App Sulla Confeitaria</h4>
+          <p class="text-[10px] text-pink-100 font-medium">Usar offline na tela inicial sem barra de busca</p>
+        </div>
+      </div>
+      <button id="btn-install-pwa" class="bg-white text-pink-600 px-3 py-1.5 rounded-xl text-xs font-extrabold shadow-sm active:scale-95 transition-all">
+        Instalar
+      </button>
+    </div>
+
     <!-- O conteúdo será injetado dinamicamente via JS correspondente à aba ativa -->
     <div id="tab-loading" class="flex flex-col items-center justify-center h-64">
       <div class="w-8 h-8 border-4 border-sweet-500 border-t-transparent rounded-full animate-spin"></div>
@@ -115,11 +139,11 @@
   <!-- MODAL DE CONFIGURAÇÕES (GLOBAL)            -->
   <!-- ========================================== -->
   <div id="modal-settings" class="fixed inset-0 z-50 hidden flex items-end sm:items-center justify-center p-4 bg-sweet-900/60 backdrop-blur-sm transition-opacity">
-    <div class="w-full max-w-sm bg-white rounded-t-3xl sm:rounded-2xl p-6 shadow-xl border border-sweet-200 page-fade-in">
+    <div class="w-full max-w-sm bg-white rounded-t-3xl sm:rounded-2xl p-6 shadow-xl border border-sweet-200 page-fade-in max-h-[90vh] overflow-y-auto custom-scroll">
       <div class="flex items-center justify-between pb-4 border-b border-sweet-100">
         <div class="flex items-center gap-2">
           <i data-lucide="sliders" class="w-5 h-5 text-sweet-500"></i>
-          <h3 class="text-base font-bold">Configurações Gerais</h3>
+          <h3 class="text-base font-bold">Configurações de Produção</h3>
         </div>
         <button id="close-settings" class="text-sweet-600 hover:text-sweet-900">
           <i data-lucide="x" class="w-5 h-5"></i>
@@ -127,45 +151,70 @@
       </div>
       
       <form id="form-settings" class="space-y-4 pt-4">
-        <div>
-          <label class="block text-xs font-semibold text-sweet-800 mb-1" for="settings-workHourRate">
-            Valor da Hora de Trabalho (R$/h)
-          </label>
-          <div class="relative">
-            <span class="absolute left-3 top-2.5 text-sm text-sweet-600">R$</span>
-            <input type="number" id="settings-workHourRate" step="0.01" min="0" required
-              class="w-full pl-9 pr-3 py-2 border border-sweet-200 rounded-xl focus:outline-none focus:border-sweet-500 text-sm font-medium">
+        <!-- Calculadora de Hora Confeiteira -->
+        <div class="p-3.5 bg-sweet-100/60 rounded-2xl border border-sweet-200 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-sweet-900 flex items-center gap-1.5">
+              <i data-lucide="clock" class="w-4 h-4 text-sweet-500"></i> Hora Confeiteira
+            </span>
+            <span class="text-[11px] font-bold text-sweet-600 bg-white px-2 py-0.5 rounded-full border border-sweet-200" id="lbl-settings-hour-rate-calculated">R$ 18.75/h</span>
           </div>
-          <p class="text-[10px] text-sweet-600 mt-1">Usado para calcular automaticamente o valor de sua mão de obra.</p>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-[11px] font-semibold text-sweet-800 mb-1" for="settings-desiredSalary">Salário Desejado (R$)</label>
+              <input type="number" id="settings-desiredSalary" step="50" min="0" placeholder="Ex: 3000" inputmode="decimal"
+                class="w-full h-12 px-3 py-2 border border-sweet-200 rounded-xl focus:outline-none focus:border-sweet-500 text-base font-medium">
+            </div>
+            <div>
+              <label class="block text-[11px] font-semibold text-sweet-800 mb-1" for="settings-monthlyHours">Horas / Mês</label>
+              <input type="number" id="settings-monthlyHours" step="1" min="1" placeholder="Ex: 160" inputmode="numeric"
+                class="w-full h-12 px-3 py-2 border border-sweet-200 rounded-xl focus:outline-none focus:border-sweet-500 text-base font-medium">
+            </div>
+          </div>
+          
+          <div>
+            <label class="block text-[11px] font-semibold text-sweet-800 mb-1" for="settings-workHourRate">
+              Valor Final da Hora (R$/h)
+            </label>
+            <div class="relative">
+              <span class="absolute left-3 top-3.5 text-base font-bold text-sweet-600">R$</span>
+              <input type="number" id="settings-workHourRate" step="0.01" min="0" required inputmode="decimal"
+                class="w-full h-12 pl-10 pr-3 py-2 border border-sweet-200 rounded-xl focus:outline-none focus:border-sweet-500 text-base font-bold text-sweet-900 bg-white">
+            </div>
+            <p class="text-[10px] text-sweet-600 mt-1">Calculado automaticamente ou ajustável livremente.</p>
+          </div>
         </div>
 
+        <!-- Custos Invisíveis / Cozinha -->
         <div>
           <label class="block text-xs font-semibold text-sweet-800 mb-1" for="settings-indirectCostDefault">
-            Custos Indiretos Padrão (%)
+            Custos Invisíveis de Cozinha (%)
           </label>
           <div class="relative">
-            <input type="number" id="settings-indirectCostDefault" step="0.1" min="0" max="100" required
-              class="w-full pr-8 pl-3 py-2 border border-sweet-200 rounded-xl focus:outline-none focus:border-sweet-500 text-sm font-medium">
-            <span class="absolute right-3 top-2.5 text-sm text-sweet-600">%</span>
+            <input type="number" id="settings-indirectCostDefault" step="0.5" min="0" max="100" required inputmode="decimal"
+              class="w-full h-12 pr-8 pl-3 py-2 border border-sweet-200 rounded-xl focus:outline-none focus:border-sweet-500 text-base font-medium">
+            <span class="absolute right-3 top-3.5 text-base font-semibold text-sweet-600">%</span>
           </div>
-          <p class="text-[10px] text-sweet-600 mt-1">Gás, água, energia elétrica e desgaste de equipamentos.</p>
+          <p class="text-[10px] text-sweet-600 mt-1">Gás de cozinha, energia elétrica, água e detergente (sugerido: 10% a 15%).</p>
         </div>
 
+        <!-- Taxas de Cartão / Delivery -->
         <div>
           <label class="block text-xs font-semibold text-sweet-800 mb-1" for="settings-taxDefault">
             Taxa de Cartão / Delivery Padrão (%)
           </label>
           <div class="relative">
-            <input type="number" id="settings-taxDefault" step="0.01" min="0" max="100" required
-              class="w-full pr-8 pl-3 py-2 border border-sweet-200 rounded-xl focus:outline-none focus:border-sweet-500 text-sm font-medium">
-            <span class="absolute right-3 top-2.5 text-sm text-sweet-600">%</span>
+            <input type="number" id="settings-taxDefault" step="0.1" min="0" max="100" required inputmode="decimal"
+              class="w-full h-12 pr-8 pl-3 py-2 border border-sweet-200 rounded-xl focus:outline-none focus:border-sweet-500 text-base font-medium">
+            <span class="absolute right-3 top-3.5 text-base font-semibold text-sweet-600">%</span>
           </div>
-          <p class="text-[10px] text-sweet-600 mt-1">Taxas de maquininha, iFood ou intermediários de pagamento.</p>
+          <p class="text-[10px] text-sweet-600 mt-1">Taxas de maquininha, iFood ou comissões de venda.</p>
         </div>
 
         <div class="pt-2">
-          <button type="submit" class="w-full bg-sweet-500 text-white py-2.5 rounded-xl font-bold hover:bg-sweet-600 transition-colors shadow-sm flex items-center justify-center gap-2">
-            <i data-lucide="check" class="w-4 h-4"></i> Salvar Configurações
+          <button type="submit" class="w-full h-12 bg-sweet-500 text-white rounded-xl font-bold hover:bg-sweet-600 transition-colors shadow-sm flex items-center justify-center gap-2 text-base active:scale-95">
+            <i data-lucide="check" class="w-5 h-5"></i> Salvar Configurações
           </button>
         </div>
       </form>
@@ -175,12 +224,15 @@
   <!-- Container de Notificações Toast -->
   <div id="toast-container" class="fixed top-4 left-4 right-4 sm:left-auto sm:right-4 sm:w-80 flex flex-col gap-2 pointer-events-none"></div>
 
+  <!-- Área Oculta para Impressão da Ficha Técnica (PDF) -->
+  <div id="tech-card-print-area" class="hidden print:block font-sans"></div>
+
   <!-- Ponto de Início da Aplicação -->
-  <script src="db.js?v=1.4"></script>
-  <script src="ingredients.js?v=1.4"></script>
-  <script src="bases.js?v=1.4"></script>
-  <script src="products.js?v=1.4"></script>
-  <script src="dashboard.js?v=1.4"></script>
-  <script src="app.js?v=1.4"></script>
+  <script src="js/db.js?v=2.0"></script>
+  <script src="js/ingredients.js?v=2.0"></script>
+  <script src="js/bases.js?v=2.0"></script>
+  <script src="js/products.js?v=2.0"></script>
+  <script src="js/dashboard.js?v=2.0"></script>
+  <script src="js/app.js?v=2.0"></script>
 </body>
 </html>
