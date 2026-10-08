@@ -1,0 +1,20 @@
+{
+  "name": "Precificação - Sulla Confeitaria",
+  "short_name": "Precificação",
+  "description": "Gestão de custos, cálculo de mão de obra e precificação inteligente para confeitaria.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#fffbf9",
+  "theme_color": "#ec4899",
+  "orientation": "portrait-primary",
+  "scope": "./",
+  "categories": ["business", "finance", "productivity"],
+  "icons": [
+    {
+      "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='128' fill='%23ec4899'/><path d='M256 120c-44.2 0-80 35.8-80 80v24h160v-24c0-44.2-35.8-80-80-80zm-112 104v168c0 22.1 17.9 40 40 40h144c22.1 0 40-17.9 40-40V224H144zm112-64c22.1 0 40 17.9 40 40h-80c0-22.1 17.9-40 40-40z' fill='%23ffffff'/></svg>",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
